@@ -15,7 +15,14 @@ Route::get('/', function () {
 });
 
 Route::view('/landing', 'pages.auth.landing')->name('landing');
-Route::view('/login', 'pages.auth.login')->name('login');
+
+/*
+ | Staff login — UI-phase demo auth only (session UiRole).
+ | POST must never put credentials in the query string.
+ */
+Route::get('/login', [\App\Http\Controllers\Auth\DemoLoginController::class, 'show'])->name('login');
+Route::post('/login', [\App\Http\Controllers\Auth\DemoLoginController::class, 'store'])->name('login.store');
+
 Route::view('/register', 'pages.auth.register')->name('register');
 
 /*
@@ -205,7 +212,7 @@ Route::middleware('ui.role')->group(function () {
         Route::view('/household-requests', 'pages.household-requests.index', [
             'active' => 'household-requests',
             'pageTitle' => 'Household Requests',
-            'pageSubtitle' => 'Monitor automatic household record verification history. Matching and daily limits are enforced by the backend later.',
+            'pageSubtitle' => 'Monitor automatic household record verification history and results.',
         ])->name('household-requests.index');
 
         Route::get('/household-requests/{id}/view', function (string $id) {

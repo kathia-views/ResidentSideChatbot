@@ -22,6 +22,8 @@ class PublicAuthLoginOnlyTest extends TestCase
         $html = $this->get(route('login'))->assertOk()->getContent();
 
         $this->assertStringContainsString('Login to Your Account', $html);
+        $this->assertStringContainsString('method="post"', $html);
+        $this->assertStringNotContainsString('method="get"', $html);
         $this->assertStringNotContainsString('href="'.e(route('register')).'"', $html);
         $this->assertStringNotContainsString('Don’t have any account?', $html);
         $this->assertStringNotContainsString('>Register</', $html);

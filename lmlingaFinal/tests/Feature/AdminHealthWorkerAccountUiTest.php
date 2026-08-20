@@ -7,6 +7,27 @@ use Tests\TestCase;
 
 class AdminHealthWorkerAccountUiTest extends TestCase
 {
+    private const TEST_ADMIN_EMAIL = 'admin@example.test';
+
+    private const TEST_ADMIN_PASSWORD = 'test-admin-password';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config([
+            'demo.staff_accounts' => [
+                [
+                    'email' => self::TEST_ADMIN_EMAIL,
+                    'password' => self::TEST_ADMIN_PASSWORD,
+                    'shell_role' => 'admin',
+                    'display_name' => 'Test Admin',
+                    'identities' => [self::TEST_ADMIN_EMAIL],
+                ],
+            ],
+        ]);
+    }
+
     public function test_admin_manage_health_workers_links_to_create_account(): void
     {
         $html = $this->withSession([UiRole::SESSION_KEY => 'admin'])
@@ -40,6 +61,20 @@ class AdminHealthWorkerAccountUiTest extends TestCase
         $this->withSession([UiRole::SESSION_KEY => 'bhw'])
             ->get(route('user-management.health-workers.create'))
             ->assertForbidden();
+    }
+
+    public function test_admin_dashboard_exposes_user_management_after_demo_login(): void
+    {
+        $this->post(route('login.store'), [
+            'email' => self::TEST_ADMIN_EMAIL,
+            'password' => self::TEST_ADMIN_PASSWORD,
+        ])->assertRedirect(route('dashboard'));
+
+        $html = $this->get(route('dashboard'))->assertOk()->getContent();
+        $this->assertStringContainsString('>User Management</span>', $html);
+        $this->assertStringContainsString('href="'.e(route('user-management.index')).'"', $html);
+
+        $this->get(route('user-management.health-workers.create'))->assertOk();
     }
 
     public function test_worker_profile_and_edit_account_details_are_wired(): void

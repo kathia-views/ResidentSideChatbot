@@ -37,7 +37,7 @@
                 :user-role-label="$userRoleLabel"
             />
 
-            <main class="lml-dashboard__content" id="lml-dashboard-content">
+            <main class="lml-dashboard__content" id="main-content">
                 @yield('content')
             </main>
         </div>

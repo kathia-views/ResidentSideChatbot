@@ -11,37 +11,37 @@
     $copy = match ($state) {
         'verifying' => [
             'title' => 'Verification in progress',
-            'text' => 'Your household information is being compared with barangay records. This check is automatic and does not wait for manual Admin approval.',
+            'text' => 'Your household information is being compared with barangay records. Matching is automatic and does not require Admin review.',
             'status' => 'Verification in progress',
         ],
         'approved' => [
             'title' => 'Match found',
-            'text' => 'Your submitted details matched a household record. Access was automatically approved.',
+            'text' => 'Your information matched a household record. Access was automatically approved.',
             'status' => 'Automatically approved',
         ],
         'rejected' => [
             'title' => 'No match found',
-            'text' => 'Your submitted details did not match a household or resident record. This request was automatically rejected.',
+            'text' => 'We could not find a matching household record using the information provided. This request was automatically rejected.',
             'status' => 'Automatically rejected',
         ],
         'failed-1' => [
             'title' => 'Verification unsuccessful',
-            'text' => 'The submitted information did not match barangay records. Failed attempt 1 of 3 today.',
+            'text' => 'The information provided did not match the household record. Failed attempt 1 of 3 today.',
             'status' => 'Failed attempt 1 of 3',
         ],
         'failed-2' => [
             'title' => 'Verification unsuccessful',
-            'text' => 'The submitted information did not match barangay records. Failed attempt 2 of 3 today.',
+            'text' => 'The information provided did not match the household record. Failed attempt 2 of 3 today.',
             'status' => 'Failed attempt 2 of 3',
         ],
         'failed-3' => [
             'title' => 'Verification unsuccessful',
-            'text' => 'The submitted information did not match barangay records. Failed attempt 3 of 3 today. You have reached the daily request limit.',
+            'text' => 'You have reached the maximum number of failed verification attempts for today.',
             'status' => 'Failed attempt 3 of 3',
         ],
         default => [
             'title' => 'Daily request limit reached',
-            'text' => 'You have used 3 failed Household Request attempts today. Further submissions are blocked until the daily limit resets. You may submit another request after the reset.',
+            'text' => 'You have reached the maximum number of household record requests allowed today. Submit Request is unavailable for now.',
             'status' => 'Daily request limit reached',
         ],
     };
@@ -83,7 +83,7 @@
                         {{ $copy['text'] }}
                     </p>
                     <p class="lml-hh-status__note">
-                        Attempt counts, daily reset, matching, approval, and blocking are enforced by the backend. This screen only represents the result states.
+                        This is an automatic verification result. Admin does not manually approve or reject Household Requests.
                     </p>
 
                     <div class="lml-chatbot-household-request__actions">

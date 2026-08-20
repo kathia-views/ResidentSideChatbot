@@ -96,6 +96,11 @@ final class UiRole
             }
         }
 
+        $demoName = trim((string) session('lml.demo_staff_name', ''));
+        if ($demoName !== '') {
+            return $demoName;
+        }
+
         $resolved = self::normalize($role) ?? self::current();
 
         if ($resolved === null) {

@@ -15,7 +15,16 @@ class RequiredPasswordChangeUiTest extends TestCase
         $this->assertStringContainsString('New Password', $html);
         $this->assertStringContainsString('Confirm New Password', $html);
         $this->assertStringContainsString('Update Password', $html);
-        $this->assertStringNotContainsString('Skip', $html);
+
+        // Shared layout accessibility control is allowed.
+        $this->assertMatchesRegularExpression(
+            '/<a[^>]*href="#main-content"[^>]*>\s*Skip to main content\s*<\/a>/i',
+            $html
+        );
+
+        // Password-change bypass CTAs remain prohibited.
+        $this->assertStringNotContainsString('>Skip</', $html);
+        $this->assertDoesNotMatchRegularExpression('/<button[^>]*>\s*Skip\s*<\/button>/i', $html);
         $this->assertStringNotContainsString('Maybe later', $html);
         $this->assertStringNotContainsString(route('dashboard'), $html);
         $this->assertStringNotContainsString('href="'.e(route('login')).'"', $html);

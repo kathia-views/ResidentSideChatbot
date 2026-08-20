@@ -113,6 +113,36 @@
     outline-offset: 2px;
 }
 
+/* ── Skip to main content (keyboard a11y) ───────────────────── */
+.lml-skip-link {
+    position: absolute;
+    left: 0.75rem;
+    top: 0.75rem;
+    z-index: 1100;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.625rem 1rem;
+    border-radius: var(--lml-radius-md);
+    background-color: var(--lml-deep-green);
+    color: #fff;
+    font-family: var(--lml-font-sans);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.25;
+    text-decoration: none;
+    box-shadow: var(--lml-shadow-md);
+    transform: translateY(-160%);
+    transition: transform 0.15s ease;
+}
+
+.lml-skip-link:focus,
+.lml-skip-link:focus-visible {
+    color: #fff;
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+    transform: translateY(0);
+}
+
 /* ── Form fields ────────────────────────────────────────────── */
 .lml-form-control {
     border-color: var(--lml-soft-green);

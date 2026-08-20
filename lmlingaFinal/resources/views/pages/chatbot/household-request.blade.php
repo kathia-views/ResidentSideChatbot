@@ -50,7 +50,7 @@
                                 You have used 3 failed Household Request attempts today. Submit Request is unavailable until the daily limit resets.
                             </p>
                             <p class="lml-hh-status__note">
-                                The attempt counter and daily reset are enforced by the backend. This UI only shows the blocked state.
+                                You have reached the maximum number of household record requests allowed today.
                             </p>
                         </div>
                     @else

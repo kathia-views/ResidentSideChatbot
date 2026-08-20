@@ -9,6 +9,14 @@
 .env
 .env.backup
 .env.production
+
+# Local-only demo credential fixture (must not be committed)
+/resources/demo/staff-login.php
+
+# Local Claude / review packaging artifacts
+/LMLinga_*_Review/
+/LMLinga_*_Review.zip
+
 .phpactor.json
 .phpunit.result.cache
 Homestead.json

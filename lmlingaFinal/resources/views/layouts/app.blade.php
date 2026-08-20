@@ -17,6 +17,8 @@
     @stack('styles')
 </head>
 <body class="lml-page">
+    <a href="#main-content" class="lml-skip-link">Skip to main content</a>
+
     @yield('body')
 
     @stack('scripts')

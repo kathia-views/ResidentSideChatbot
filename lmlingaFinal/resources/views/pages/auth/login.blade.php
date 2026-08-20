@@ -30,36 +30,79 @@
                     </p>
                 </div>
 
-                <form class="lml-login-form" action="#" method="get" novalidate>
-                    <div class="lml-login-field">
-                        <label for="full_name" class="lml-login-field__label">
-                            <i class="bi bi-person-fill" aria-hidden="true"></i>
-                            <span>Full Name</span>
-                        </label>
-                        <x-lml.text-input
-                            name="full_name"
-                            id="full_name"
-                            autocomplete="name"
-                            class="lml-login-field__control w-100"
-                        />
-                    </div>
+                {{--
+                    UI-phase demo login: POST + CSRF only.
+                    Credentials must never appear in the URL (no method="get").
+                    Native inputs restore approved staff-login interaction
+                    (no empty Bootstrap input-group wrapper over Password).
+                --}}
+                <form
+                    class="lml-login-form"
+                    action="{{ route('login.store') }}"
+                    method="post"
+                    novalidate
+                    data-lml-staff-login
+                >
+                    @csrf
+
+                    @if ($errors->any())
+                        <p
+                            class="lml-login-error"
+                            role="alert"
+                            aria-live="assertive"
+                            id="lml-login-error"
+                        >
+                            {{ $errors->first() }}
+                        </p>
+                    @endif
 
                     <div class="lml-login-field">
+                        <label for="email" class="lml-login-field__label">
+                            <i class="bi bi-envelope-fill" aria-hidden="true"></i>
+                            <span>Email</span>
+                        </label>
+                        <input
+                            type="email"
+                            name="email"
+                            id="email"
+                            value="{{ old('email') }}"
+                            autocomplete="email"
+                            inputmode="email"
+                            placeholder="name@example.com"
+                            required
+                            aria-required="true"
+                            aria-invalid="{{ $errors->any() ? 'true' : 'false' }}"
+                            @if ($errors->any()) aria-describedby="lml-login-error" @endif
+                            class="form-control lml-form-control lml-login-field__control lml-focus-ring"
+                        >
+                    </div>
+
+                    <div class="lml-login-field lml-login-field--password">
                         <label for="password" class="lml-login-field__label">
                             <i class="bi bi-lock-fill" aria-hidden="true"></i>
                             <span>Password</span>
                         </label>
-                        <x-lml.password-input
+                        <input
+                            type="password"
                             name="password"
                             id="password"
-                            placeholder=""
-                            :toggle="false"
+                            value=""
                             autocomplete="current-password"
-                            class="lml-login-field__control w-100"
-                        />
-                        <div class="lml-login-forgot">
-                            <a href="{{ route('password.request') }}" class="lml-login-forgot__link lml-focus-ring">Forgot Password?</a>
-                        </div>
+                            required
+                            aria-required="true"
+                            aria-invalid="{{ $errors->any() ? 'true' : 'false' }}"
+                            @if ($errors->any()) aria-describedby="lml-login-error" @endif
+                            class="form-control lml-form-control lml-login-field__control lml-focus-ring"
+                        >
+                    </div>
+
+                    <div class="lml-login-forgot">
+                        <a
+                            href="{{ route('password.request') }}"
+                            class="lml-login-forgot__link lml-focus-ring"
+                        >
+                            Forgot Password?
+                        </a>
                     </div>
 
                     <div class="lml-login-actions">

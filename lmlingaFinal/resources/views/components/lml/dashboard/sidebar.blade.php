@@ -115,7 +115,8 @@
                     'label' => 'Child Care',
                     'icon' => 'bi-heart-pulse',
                     /*
-                     | BLOCKER: no canonical named route for Health Records → Child Care.
+                     | Canonical Health Records → Child Care destination:
+                     | health-records.child-care.index
                      | Do not reuse household-profiling.members.child-immunization /
                      | birth-history / school-based-immunization (Household Profiling context).
                      */

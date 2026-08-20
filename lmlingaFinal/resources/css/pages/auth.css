@@ -508,8 +508,14 @@
 
 .lml-login-field {
     display: block;
+    position: relative;
     width: 100%;
     margin-bottom: 1.15rem;
+    z-index: 0;
+}
+
+.lml-login-field--password {
+    margin-bottom: 0.35rem;
 }
 
 .lml-login-field__label {
@@ -528,28 +534,18 @@
     line-height: 1;
 }
 
-/* Force inputs to span the full form width */
-.lml-login-field .input-group,
-.lml-login-field .lml-form-control,
-.lml-login-field .lml-login-field__control {
+/*
+ | Staff login inputs must remain direct, clickable controls.
+ | Do not wrap Password in an empty Bootstrap .input-group, and do not
+ | place any overlay / absolute layer over the fields.
+ */
+.lml-login-page .lml-login-field .lml-form-control,
+.lml-login-page .lml-login-field .lml-login-field__control {
     display: block;
+    position: relative;
+    z-index: 1;
     width: 100%;
     max-width: 100%;
-}
-
-.lml-login-field .input-group {
-    display: flex;
-}
-
-.lml-login-field .input-group .lml-form-control,
-.lml-login-field .input-group .lml-login-field__control {
-    flex: 1 1 auto;
-    width: 100%;
-    min-width: 0;
-}
-
-.lml-login-field .lml-form-control,
-.lml-login-field .lml-login-field__control {
     min-height: 56px;
     padding: 0.65rem 0.9rem;
     border: 0;
@@ -558,27 +554,31 @@
     box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
     color: #000;
     font-size: 1rem;
+    pointer-events: auto;
 }
 
-.lml-login-field .lml-form-control:focus,
-.lml-login-field .lml-login-field__control:focus {
+.lml-login-page .lml-login-field .lml-form-control:focus,
+.lml-login-page .lml-login-field .lml-login-field__control:focus {
     border-color: transparent;
+    outline: none;
     box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25), 0 0 0 0.2rem rgba(var(--lml-primary-rgb), 0.2);
 }
 
-.lml-login-field .input-group .lml-form-control {
-    border-radius: 4px;
-}
-
-/* Align with the right edge of the password input */
+/* Align with the right edge of the password input — BELOW the field, never inside it */
 .lml-login-forgot {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    position: relative;
+    z-index: 1;
     width: 100%;
     margin-top: 0.55rem;
+    margin-bottom: 0;
+    pointer-events: auto;
 }
 
 .lml-login-forgot__link {
+    position: static;
     color: var(--lml-deep-green);
     font-size: clamp(0.9375rem, 1.3vw, 1.25rem); /* ~20px */
     font-weight: 400;
@@ -594,12 +594,24 @@
     text-underline-offset: 0.15em;
 }
 
+.lml-login-error {
+    margin: 0 0 1rem;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid rgba(185, 28, 28, 0.35);
+    border-radius: var(--lml-radius-md);
+    background-color: #fef2f2;
+    color: #991b1b;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
 .lml-login-actions {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.65rem;
-    margin-top: 0.85rem; /* sit closer to Forgot Password — no flex push to card bottom */
+    margin-top: 1.15rem;
     padding-top: 0;
     width: 100%;
 }
@@ -629,8 +641,12 @@
         margin-bottom: 1.35rem;
     }
 
-    .lml-login-field .lml-form-control,
-    .lml-login-field .lml-login-field__control {
+    .lml-login-field--password {
+        margin-bottom: 0.4rem;
+    }
+
+    .lml-login-page .lml-login-field .lml-form-control,
+    .lml-login-page .lml-login-field .lml-login-field__control {
         min-height: 58px;
     }
 
@@ -658,13 +674,17 @@
         margin-bottom: 1rem;
     }
 
-    .lml-login-field .lml-form-control,
-    .lml-login-field .lml-login-field__control {
+    .lml-login-field--password {
+        margin-bottom: 0.3rem;
+    }
+
+    .lml-login-page .lml-login-field .lml-form-control,
+    .lml-login-page .lml-login-field .lml-login-field__control {
         min-height: 48px;
     }
 
     .lml-login-actions {
-        margin-top: 0.7rem;
+        margin-top: 1rem;
         gap: 0.55rem;
     }
 }
@@ -687,8 +707,8 @@
         font-size: 1rem;
     }
 
-    .lml-login-field .lml-form-control,
-    .lml-login-field .lml-login-field__control {
+    .lml-login-page .lml-login-field .lml-form-control,
+    .lml-login-page .lml-login-field .lml-login-field__control {
         min-height: 44px;
         padding: 0.5rem 0.75rem;
         font-size: 0.9375rem;
