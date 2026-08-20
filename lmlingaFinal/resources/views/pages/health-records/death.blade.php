@@ -17,7 +17,6 @@
         $exportQuery = \App\Support\HealthRecordsDeath::exportQuery($filters);
         $totalUnfiltered = $totalUnfiltered ?? 0;
         $filteredTotal = $records?->total() ?? 0;
-        $pageDescription = 'Submit a death record for a selected resident. Admin verification is required before the resident is marked deceased.';
         $hasDataset = $totalUnfiltered > 0;
         $hasFilteredRows = $filteredTotal > 0;
     @endphp
@@ -32,9 +31,6 @@
             <header class="lml-hr-death__top">
                 <div class="lml-hr-death__title-block">
                     <h2 class="lml-hr-death__title" id="lml-hr-death-heading">Death</h2>
-                    <p class="lml-hr-death__description" id="lml-hr-death-desc">
-                        {{ $pageDescription }}
-                    </p>
                 </div>
 
                 <div class="lml-hr-death__actions">
@@ -220,19 +216,19 @@
                         </thead>
                         <tbody data-hr-death-tbody>
                             @foreach ($records ?? [] as $row)
-                                <tr data-hr-death-row data-row-key="{{ $row['key'] }}">
+                                <tr
+                                    class="lml-hr-death__record-row"
+                                    data-hr-death-row
+                                    data-row-key="{{ $row['key'] }}"
+                                >
                                     <th scope="row" class="lml-hr-death__cell lml-hr-death__cell--name">
-                                        <a href="{{ $row['open_url'] }}" class="lml-hr-death__name-link lml-focus-ring">
+                                        <a
+                                            href="{{ $row['open_url'] }}"
+                                            class="lml-hr-death__name-link lml-focus-ring"
+                                            aria-label="Open death record for {{ $row['full_name'] }}"
+                                        >
                                             {{ $row['full_name'] }}
                                         </a>
-                                        @if (($row['member_id'] ?? '') !== '' || ($row['sex'] ?? '') !== '')
-                                            <span class="lml-hr-death__resident-meta">
-                                                {{ implode(' · ', array_filter([
-                                                    (string) ($row['sex'] ?? ''),
-                                                    (string) ($row['member_id'] ?? ''),
-                                                ])) }}
-                                            </span>
-                                        @endif
                                     </th>
                                     <td class="lml-hr-death__cell lml-hr-death__cell--age">
                                         {{ $row['age'] }}

@@ -3,9 +3,14 @@
 @section('title', 'Household Record Access Request - LMLinga')
 
 @section('body')
+    @php
+        $previewState = (string) request()->query('state', '');
+        $isDailyLimit = $previewState === 'daily-limit';
+    @endphp
     <div
         class="lml-chatbot-household-request"
-        data-status-url="{{ route('chatbot.household.verification.sms') }}"
+        data-status-url="{{ route('chatbot.household.verification.status', ['state' => 'verifying']) }}"
+        data-hh-preview-state="{{ $previewState }}"
     >
         <div class="lml-chatbot-household-request__inner">
             <header class="lml-chatbot-household-request__header">
@@ -31,11 +36,24 @@
                             Request Household Record
                         </h1>
                         <p class="lml-chatbot-household-request__intro">
-                            Complete this form to request access to a household record. Your request will be reviewed
-                            before your identity and household record are linked.
+                            Complete this form so the system can automatically compare your details with barangay household records.
+                            Matching is automatic. This is not a manual Admin approval step.
                         </p>
                     </div>
 
+                    @if ($isDailyLimit)
+                        <div class="lml-hh-status lml-hh-status--inline" role="alert">
+                            <p class="lml-hh-status__badge lml-hh-status__badge--daily-limit">
+                                Daily request limit reached
+                            </p>
+                            <p class="lml-chatbot-household-request__intro">
+                                You have used 3 failed Household Request attempts today. Submit Request is unavailable until the daily limit resets.
+                            </p>
+                            <p class="lml-hh-status__note">
+                                The attempt counter and daily reset are enforced by the backend. This UI only shows the blocked state.
+                            </p>
+                        </div>
+                    @else
                     {{--
                         UI-phase form: method stays POST with CSRF for secure markup.
                         Submission is intercepted by client-side validation until backend persistence is wired.
@@ -220,6 +238,7 @@
                             </button>
                         </div>
                     </form>
+                    @endif
                 </section>
             </main>
         </div>

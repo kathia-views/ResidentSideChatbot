@@ -179,7 +179,6 @@ function resolveInitialTab(root) {
 function handleWorkerPlaceholderAction(root, action, workerName) {
     const label = workerName ? ` for ${workerName}` : '';
     const messages = {
-        add: 'ADD is a UI placeholder — no account was created.',
         photo: `Photo${label} is a UI placeholder — no image was uploaded.`,
         view: `View${label} is a UI placeholder — no details loaded.`,
         delete: `Delete${label} is a UI placeholder — nothing was removed.`,
@@ -208,7 +207,6 @@ function initUserManagement(root) {
     const workersPanel = root.querySelector('[data-um-panel="workers"]');
     const searchInput = workersPanel?.querySelector('[data-um-search]');
     const categorySelect = workersPanel?.querySelector('[data-um-category]');
-    const addButton = workersPanel?.querySelector('[data-um-add]');
     const tabs = Array.from(root.querySelectorAll('[data-um-tab]'));
 
     root.querySelectorAll('[data-hw-menu]').forEach((menuRoot) => {
@@ -217,10 +215,6 @@ function initUserManagement(root) {
 
     searchInput?.addEventListener('input', () => applyWorkerFilters(root));
     categorySelect?.addEventListener('change', () => applyWorkerFilters(root));
-
-    addButton?.addEventListener('click', () => {
-        handleWorkerPlaceholderAction(root, 'add');
-    });
 
     tabs.forEach((tab, index) => {
         tab.addEventListener('click', () => {

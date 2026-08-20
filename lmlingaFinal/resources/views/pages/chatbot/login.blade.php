@@ -40,17 +40,20 @@
                         @csrf
 
                         <x-lml.form-group
-                            label="Full Name"
-                            name="full_name"
-                            icon="bi-person-fill"
+                            label="Email"
+                            name="email"
+                            icon="bi-envelope-fill"
                             :required="true"
                             class="lml-chatbot-login__field"
                         >
                             <x-lml.text-input
-                                name="full_name"
-                                id="full_name"
+                                type="email"
+                                name="email"
+                                id="email"
                                 :required="true"
-                                autocomplete="name"
+                                autocomplete="email"
+                                inputmode="email"
+                                placeholder="name@example.com"
                                 class="lml-chatbot-login__control w-100"
                             />
                         </x-lml.form-group>
@@ -86,13 +89,6 @@
                             <button type="submit" class="lml-chatbot-login__submit lml-focus-ring">
                                 Login
                             </button>
-
-                            <p class="lml-chatbot-login__footer">
-                                Don’t have an account?
-                                <a href="{{ route('chatbot.register') }}" class="lml-chatbot-login__register-link lml-focus-ring">
-                                    Register
-                                </a>
-                            </p>
                         </div>
                     </form>
                 </section>

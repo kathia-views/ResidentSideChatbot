@@ -1129,4 +1129,13 @@
     }
 }
 
+.lml-change-password__alert,
+.lml-change-password__toast {
+    margin: 0 0 0.85rem;
+}
+
+.lml-change-password-page .lml-register-logo {
+    cursor: default;
+}
+
 

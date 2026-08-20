@@ -32,18 +32,28 @@
         $registryNo = old('registry_no', $deathRequest && $deathRequest->isRejected() ? $deathRequest->registry_no : '');
         $isFormMode = $deathMode === 'create';
         $statusMessage = session('status');
-        $backUrl = route('health-records.death.residents');
+        $backUrl = route('health-records.death.index');
     @endphp
 
-    <div
-        class="lml-hr-death-form"
-        data-lml-hr-death-form
-        data-death-mode="{{ $deathMode }}"
-        data-resident-name="{{ $memberName }}"
-        data-resident-sex="{{ $memberSex }}"
-        data-household-no="{{ $householdNo }}"
-        data-member-id="{{ $memberId }}"
-    >
+    <div class="lml-hr-death lml-hr-death--record">
+        <a
+            href="{{ $backUrl }}"
+            class="lml-hr-death__page-back lml-focus-ring"
+            aria-label="Back to Death records page"
+        >
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span>Back to Death records page</span>
+        </a>
+
+        <div
+            class="lml-hr-death-form"
+            data-lml-hr-death-form
+            data-death-mode="{{ $deathMode }}"
+            data-resident-name="{{ $memberName }}"
+            data-resident-sex="{{ $memberSex }}"
+            data-household-no="{{ $householdNo }}"
+            data-member-id="{{ $memberId }}"
+        >
         @if ($statusMessage)
             <p class="lml-hr-death-form__toast" role="status" data-death-toast>
                 {{ $statusMessage }}
@@ -56,21 +66,15 @@
                 <p class="lml-hr-death-form__hint">
                     A death submission must identify a specific resident from the household catalog.
                 </p>
-                <a href="{{ $backUrl }}" class="lml-hr-death-form__back lml-focus-ring">
-                    Return to resident selection
+                <a href="{{ $backUrl }}" class="lml-hr-death__page-back lml-focus-ring">
+                    <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                    <span>Back to Death records page</span>
                 </a>
             </section>
         @else
             <article class="lml-hr-death-form__profile" aria-labelledby="lml-hr-death-member-name">
-                <a
-                    href="{{ $backUrl }}"
-                    class="lml-hr-death-form__back-icon lml-focus-ring"
-                    aria-label="Back to resident selection"
-                >
-                    <i class="bi bi-arrow-left" aria-hidden="true"></i>
-                </a>
-                <span class="lml-hr-death-form__avatar" aria-hidden="true">{{ $initials }}</span>
-                <div class="lml-hr-death-form__identity">
+                <div class="lml-hr-death-form__profile-head">
+                    <span class="lml-hr-death-form__avatar" aria-hidden="true">{{ $initials }}</span>
                     <div class="lml-hr-death-form__name-row">
                         <h2 id="lml-hr-death-member-name" class="lml-hr-death-form__name">
                             {{ $memberName }}
@@ -81,40 +85,56 @@
                             {{ $isDeceased ? 'Deceased' : $vitalLabel }}
                         </span>
                     </div>
-                    <dl class="lml-hr-death-form__meta">
-                        <div>
-                            <dt>Member ID</dt>
-                            <dd>{{ $memberId !== '' ? $memberId : $emptyRecord }}</dd>
-                        </div>
-                        <div>
-                            <dt>Relationship</dt>
-                            <dd>{{ ($demoMember['relationship'] ?? '') !== '' ? $demoMember['relationship'] : $emptyRecord }}</dd>
-                        </div>
-                        <div>
-                            <dt>Sex</dt>
-                            <dd>{{ $memberSex !== '' ? $memberSex : $emptyRecord }}</dd>
-                        </div>
-                        <div>
-                            <dt>Age</dt>
-                            <dd>{{ $memberAge !== null && $memberAge !== '' ? $memberAge : $emptyRecord }}</dd>
-                        </div>
-                        <div>
-                            <dt>Date of Birth</dt>
-                            <dd>{{ $dateBirth !== '' ? $dateBirth : $emptyRecord }}</dd>
-                        </div>
-                        <div>
-                            <dt>Household</dt>
-                            <dd>{{ $householdDisplay }}</dd>
-                        </div>
-                        <div>
-                            <dt>Zone</dt>
-                            <dd>{{ $zone !== '' ? $zone : $emptyRecord }}</dd>
-                        </div>
-                        <div>
-                            <dt>Address</dt>
-                            <dd>{{ $address !== '' ? $address : $emptyRecord }}</dd>
-                        </div>
-                    </dl>
+                </div>
+                <div
+                    class="lml-hr-death-form__meta lml-hr-death-form__meta--profile"
+                    role="group"
+                    aria-label="Resident profile details"
+                >
+                    <div class="lml-hr-death-form__meta-col" data-death-profile-col="1">
+                        <dl class="lml-hr-death-form__meta-list">
+                            <div>
+                                <dt>Member ID</dt>
+                                <dd>{{ $memberId !== '' ? $memberId : $emptyRecord }}</dd>
+                            </div>
+                            <div>
+                                <dt>Sex</dt>
+                                <dd>{{ $memberSex !== '' ? $memberSex : $emptyRecord }}</dd>
+                            </div>
+                            <div>
+                                <dt>Date of Birth</dt>
+                                <dd>{{ $dateBirth !== '' ? $dateBirth : $emptyRecord }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                    <div class="lml-hr-death-form__meta-col" data-death-profile-col="2">
+                        <dl class="lml-hr-death-form__meta-list">
+                            <div>
+                                <dt>Relationship</dt>
+                                <dd>{{ ($demoMember['relationship'] ?? '') !== '' ? $demoMember['relationship'] : $emptyRecord }}</dd>
+                            </div>
+                            <div>
+                                <dt>Age</dt>
+                                <dd>{{ $memberAge !== null && $memberAge !== '' ? $memberAge : $emptyRecord }}</dd>
+                            </div>
+                            <div>
+                                <dt>Household</dt>
+                                <dd>{{ $householdDisplay }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+                    <div class="lml-hr-death-form__meta-col" data-death-profile-col="3">
+                        <dl class="lml-hr-death-form__meta-list">
+                            <div>
+                                <dt>Address</dt>
+                                <dd>{{ $address !== '' ? $address : $emptyRecord }}</dd>
+                            </div>
+                            <div>
+                                <dt>Zone</dt>
+                                <dd>{{ $zone !== '' ? $zone : $emptyRecord }}</dd>
+                            </div>
+                        </dl>
+                    </div>
                 </div>
             </article>
 
@@ -431,5 +451,6 @@
                 </section>
             @endif
         @endif
+        </div>
     </div>
 @endsection

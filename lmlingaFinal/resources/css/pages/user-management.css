@@ -185,6 +185,7 @@
     line-height: 1.2;
     cursor: pointer;
     white-space: nowrap;
+    text-decoration: none;
 }
 
 .lml-user-mgmt__add-btn:hover {

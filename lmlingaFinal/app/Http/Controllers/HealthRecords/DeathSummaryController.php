@@ -44,6 +44,7 @@ class DeathSummaryController extends Controller
             'pageTitle' => 'Select a resident',
             'pageSubtitle' => 'Choose a resident to open or submit a death record for Admin verification.',
             'residents' => HealthRecordsDeath::residentCandidates(),
+            'zones' => HealthRecordsDeath::zones(),
         ]);
     }
 

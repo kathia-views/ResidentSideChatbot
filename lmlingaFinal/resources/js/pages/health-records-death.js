@@ -36,6 +36,8 @@ function initListingFilters(root) {
 
 function initResidentSearch(root) {
     const input = root.querySelector('[data-hr-death-resident-search]');
+    const zoneSelect = root.querySelector('[data-hr-death-resident-zone]');
+    const statusSelect = root.querySelector('[data-hr-death-resident-status]');
     const rows = Array.from(root.querySelectorAll('[data-hr-death-resident-row]'));
     if (!input || rows.length === 0) {
         return;
@@ -43,13 +45,24 @@ function initResidentSearch(root) {
 
     const apply = () => {
         const query = input.value.trim().toLowerCase();
+        const zone = (zoneSelect?.value || 'all').trim();
+        const status = (statusSelect?.value || 'all').trim();
+
         rows.forEach((row) => {
-            const haystack = row.dataset.search || row.dataset.name || '';
-            row.hidden = Boolean(query) && !haystack.includes(query);
+            const name = row.dataset.name || '';
+            const rowZone = row.dataset.zone || '';
+            const rowStatus = row.dataset.statusLabel || '';
+            const matchesName = !query || name.includes(query);
+            const matchesZone = zone === 'all' || rowZone === zone;
+            const matchesStatus = status === 'all' || rowStatus === status;
+            row.hidden = !(matchesName && matchesZone && matchesStatus);
         });
     };
 
     input.addEventListener('input', apply);
+    input.addEventListener('search', apply);
+    zoneSelect?.addEventListener('change', apply);
+    statusSelect?.addEventListener('change', apply);
 }
 
 function initHealthRecordsDeath(root) {

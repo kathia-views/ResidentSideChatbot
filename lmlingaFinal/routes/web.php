@@ -51,9 +51,11 @@ Route::view('/chatbot/household/verification/sms', 'pages.chatbot.household-sms-
 Route::view('/chatbot/household/verification/email', 'pages.chatbot.household-email-verification')
     ->name('chatbot.household.verification.email');
 
-Route::view('/chatbot/household/verification/status', 'pages.chatbot.household-placeholder', [
-    'mode' => 'status',
-])->name('chatbot.household.verification.status');
+Route::get('/chatbot/household/verification/status', function () {
+    return view('pages.chatbot.household-verification-status', [
+        'state' => request()->query('state', 'verifying'),
+    ]);
+})->name('chatbot.household.verification.status');
 
 Route::view('/chatbot/household', 'pages.chatbot.household-information')
     ->name('chatbot.household.information');
@@ -66,6 +68,13 @@ Route::view('/chatbot/household', 'pages.chatbot.household-information')
  */
 Route::view('/forgot-password', 'pages.auth.forgot-password')->name('password.request');
 Route::view('/reset-password', 'pages.auth.reset-password')->name('password.reset');
+
+/*
+ | First-login required password change (UI only).
+ | Not a public registration screen. No skip/dashboard CTA.
+ | Server-side must_change_password enforcement is backend work.
+ */
+Route::view('/change-password', 'pages.auth.change-password')->name('password.change.required');
 
 /*
  | Authenticated dashboard shell modules (UI preview; no real auth stack yet).
@@ -91,12 +100,20 @@ Route::middleware('ui.role')->group(function () {
             ]);
         })->name('user-management.index');
 
+        Route::get('/user-management/health-workers/create', function () {
+            return view('pages.user-management.health-worker-create', [
+                'active' => 'user-management',
+                'pageTitle' => 'Create Account',
+                'pageSubtitle' => 'Add a Barangay Health Worker account with a temporary password.',
+            ]);
+        })->name('user-management.health-workers.create');
+
         Route::get('/user-management/health-workers/{id}/edit', function (string $id) {
             $worker = DemoCatalog::findHealthWorker($id);
 
             return view('pages.user-management.health-worker-edit', [
                 'active' => 'user-management',
-                'pageTitle' => 'Edit Personal Information',
+                'pageTitle' => 'Edit Account Details',
                 'pageSubtitle' => "Update the selected health worker's profile and account information.",
                 'workerId' => $id,
                 'demoWorker' => $worker,
@@ -188,7 +205,7 @@ Route::middleware('ui.role')->group(function () {
         Route::view('/household-requests', 'pages.household-requests.index', [
             'active' => 'household-requests',
             'pageTitle' => 'Household Requests',
-            'pageSubtitle' => 'Review household record access requests submitted by barangay residents.',
+            'pageSubtitle' => 'Monitor automatic household record verification history. Matching and daily limits are enforced by the backend later.',
         ])->name('household-requests.index');
 
         Route::get('/household-requests/{id}/view', function (string $id) {
@@ -197,7 +214,7 @@ Route::middleware('ui.role')->group(function () {
             return view('pages.household-requests.view', [
                 'active' => 'household-requests',
                 'pageTitle' => 'Household Request Details',
-                'pageSubtitle' => 'Review the selected household record access request and its evaluation result.',
+                'pageSubtitle' => 'Automatic verification result for this household record access request.',
                 'requestId' => $id,
                 'demoRequest' => $request,
             ]);

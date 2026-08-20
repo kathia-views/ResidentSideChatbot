@@ -4,7 +4,7 @@
 --}}
 @extends('layouts.dashboard')
 
-@section('title', 'Edit Personal Information - LMLinga')
+@section('title', 'Edit Account Details - LMLinga')
 
 @php
     $worker = $demoWorker ?? null;
@@ -54,7 +54,7 @@
                     The selected demo health worker could not be loaded.
                 </p>
                 <a href="{{ route('user-management.index') }}" class="lml-hw-wizard__back-link lml-focus-ring">
-                    Back to User Management
+                    Back to Manage Health Workers
                 </a>
             </div>
         </div>
@@ -63,7 +63,7 @@
             class="lml-hw-wizard"
             data-lml-hw-wizard
             data-worker-id="{{ $worker['id'] }}"
-            data-return-url="{{ route('user-management.index') }}"
+            data-return-url="{{ route('user-management.health-workers.view', ['id' => $worker['id']]) }}"
         >
             <div class="lml-hw-wizard__toolbar">
                 <a
@@ -71,7 +71,7 @@
                     class="lml-hw-wizard__back lml-focus-ring"
                 >
                     <i class="bi bi-arrow-left" aria-hidden="true"></i>
-                    <span>Back to User Management</span>
+                    <span>Back to Manage Health Workers</span>
                 </a>
             </div>
 
@@ -82,7 +82,7 @@
                     </span>
                     <div>
                         <h2 class="lml-hw-wizard__title" id="lml-hw-wizard-page-title">
-                            Edit Personal Information
+                            Edit Account Details
                         </h2>
                         <p class="lml-hw-wizard__subtitle">
                             Update the selected health worker’s profile and account information.
@@ -444,6 +444,13 @@
                         >
                             Previous
                         </button>
+                        <a
+                            href="{{ route('user-management.health-workers.view', ['id' => $worker['id']]) }}"
+                            class="lml-hw-wizard__btn lml-hw-wizard__btn--cancel lml-focus-ring"
+                            data-hw-wizard-cancel
+                        >
+                            Cancel
+                        </a>
                         <button
                             type="button"
                             class="lml-hw-wizard__btn lml-hw-wizard__btn--next lml-focus-ring"
@@ -457,7 +464,7 @@
                             data-hw-wizard-save
                             hidden
                         >
-                            Save Information
+                            Save
                         </button>
                     </div>
                 </form>

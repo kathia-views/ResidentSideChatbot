@@ -66,11 +66,6 @@
                         <button type="submit" class="lml-register-submit lml-login-submit lml-focus-ring">
                             Login
                         </button>
-
-                        <p class="lml-register-footer lml-login-footer">
-                            Don’t have any account?
-                            <a href="{{ route('register') }}" class="lml-register-login-link">Register</a>
-                        </p>
                     </div>
                 </form>
             </section>

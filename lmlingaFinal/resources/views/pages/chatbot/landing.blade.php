@@ -35,14 +35,8 @@
 
                     <div class="lml-chatbot-hero__actions">
                         <a
-                            href="{{ route('chatbot.register') }}"
-                            class="lml-chatbot-hero__btn lml-chatbot-hero__btn--primary"
-                        >
-                            Register
-                        </a>
-                        <a
                             href="{{ route('chatbot.login') }}"
-                            class="lml-chatbot-hero__btn lml-chatbot-hero__btn--secondary"
+                            class="lml-chatbot-hero__btn lml-chatbot-hero__btn--primary"
                         >
                             Login
                         </a>

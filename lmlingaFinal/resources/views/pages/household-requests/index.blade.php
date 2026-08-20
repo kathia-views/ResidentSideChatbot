@@ -1,6 +1,6 @@
 {{--
-    Household Requests — Admin review list (UI only).
-    Demo data / client-side filters. View opens read-only request details.
+    Household Requests — Admin monitoring / history (UI only).
+    Automatic verification. No manual approve/reject workflow.
 --}}
 @extends('layouts.dashboard')
 

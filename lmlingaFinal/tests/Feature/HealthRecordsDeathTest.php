@@ -75,12 +75,28 @@ class HealthRecordsDeathTest extends TestCase
         $this->assertSame('death', UiRole::sidebarActiveKey());
         $this->assertStringContainsString('id="lml-hr-death-residents"', $html);
         $this->assertStringContainsString('Select a resident', $html);
+        $this->assertStringContainsString(
+            'Choose a resident to open or submit a death record for Admin verification.',
+            $html
+        );
+        $this->assertStringNotContainsString('lml-hr-death-residents-heading', $html);
+        $this->assertStringNotContainsString('class="lml-hr-death__title"', $html);
         $this->assertStringContainsString('Kristine Reyes', $html);
         $this->assertStringContainsString(
             route('health-records.death.show', ['householdNo' => 'HH-151', 'memberId' => 'MB-002']),
             $html
         );
+        $this->assertStringContainsString('Back to Death records page', $html);
         $this->assertStringContainsString(route('health-records.death.index'), $html);
+        $this->assertStringNotContainsString('lml-hr-death__residents-hint', $html);
+        $this->assertStringContainsString('lml-hr-death__open-btn', $html);
+        $this->assertStringContainsString('data-hr-death-resident-filters', $html);
+        $this->assertStringContainsString('placeholder="Search resident name"', $html);
+        $this->assertStringContainsString('All Zones', $html);
+        $this->assertStringContainsString('All Statuses', $html);
+        $this->assertStringContainsString('Pending verification', $html);
+        $this->assertStringNotContainsString('Reset Filters', $html);
+        $this->assertStringNotContainsString('Clear Filters', $html);
     }
 
     public function test_resident_picker_distinguishes_same_name_catalog_members(): void
@@ -107,18 +123,91 @@ class HealthRecordsDeathTest extends TestCase
         $html = $this->withSession([UiRole::SESSION_KEY => 'bhw'])
             ->get(route('health-records.death.residents'))
             ->getContent();
+        $tbody = $this->residentTbodyHtml($html);
 
         $this->assertStringContainsString('MB-001', $html);
         $this->assertStringContainsString('MB-002', $html);
-        $this->assertStringContainsString('Born May 4, 1991', $html);
-        $this->assertStringContainsString('Born August 12, 1991', $html);
+        $this->assertStringNotContainsString('Born May 4, 1991', $tbody);
+        $this->assertStringNotContainsString('Born August 12, 1991', $tbody);
+        $this->assertStringNotContainsString('lml-hr-death__resident-meta', $tbody);
+        $this->assertStringContainsString('lml-hr-death__record-row', $tbody);
         $this->assertStringContainsString(
-            'aria-label="Record death for Kristine Reyes, Male, Head, MB-001"',
-            $html
+            'aria-label="Record death for Kristine Reyes, MB-001"',
+            $tbody
         );
         $this->assertStringContainsString(
-            'aria-label="Record death for Kristine Reyes, Female, Wife, MB-002"',
+            'aria-label="Record death for Kristine Reyes, MB-002"',
+            $tbody
+        );
+    }
+
+    public function test_resident_selection_filters_include_search_zone_and_status_without_reset(): void
+    {
+        $html = $this->withSession([UiRole::SESSION_KEY => 'bhw'])
+            ->get(route('health-records.death.residents'))
+            ->getContent();
+
+        $searchPos = strpos($html, 'data-hr-death-resident-search');
+        $zonePos = strpos($html, 'data-hr-death-resident-zone');
+        $statusPos = strpos($html, 'data-hr-death-resident-status');
+
+        $this->assertNotFalse($searchPos);
+        $this->assertNotFalse($zonePos);
+        $this->assertNotFalse($statusPos);
+        $this->assertLessThan($zonePos, $searchPos);
+        $this->assertLessThan($statusPos, $zonePos);
+
+        foreach (['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5'] as $zone) {
+            $this->assertStringContainsString('>'.$zone.'</option>', $html);
+        }
+
+        $this->assertStringContainsString('data-status-label=', $html);
+        $this->assertStringContainsString('data-zone=', $html);
+        $this->assertStringNotContainsString('Reset Filters', $html);
+        $this->assertStringNotContainsString('Clear Filters', $html);
+        $this->assertStringNotContainsString('data-hr-death-resident-reset', $html);
+        $this->assertMatchesRegularExpression(
+            '/<th scope="col">Resident<\/th>\s*<th scope="col">Household<\/th>\s*<th scope="col">Zone<\/th>\s*<th scope="col">Status<\/th>\s*<th scope="col">Action<\/th>/u',
             $html
+        );
+    }
+
+    public function test_resident_action_column_uses_record_death_or_open_from_existing_state(): void
+    {
+        $this->createListingRequest(
+            'HH-153',
+            'MB-005',
+            'Adrian Corporal',
+            'Male',
+            'SILOS',
+            'Zone 1',
+            now()->subDay()
+        );
+
+        $html = $this->withSession([UiRole::SESSION_KEY => 'bhw'])
+            ->get(route('health-records.death.residents'))
+            ->getContent();
+        $tbody = $this->residentTbodyHtml($html);
+
+        $this->assertStringContainsString('<th scope="col">Action</th>', $html);
+        $this->assertStringContainsString('data-hr-death-resident-action="record"', $tbody);
+        $this->assertStringContainsString('data-hr-death-resident-action="open"', $tbody);
+
+        $kristine = $this->residentRowHtml($tbody, 'MB-002');
+        $this->assertStringContainsString('Record Death', $kristine);
+        $this->assertStringNotContainsString('data-hr-death-resident-action="open"', $kristine);
+        $this->assertStringContainsString(
+            route('health-records.death.show', ['householdNo' => 'HH-151', 'memberId' => 'MB-002']),
+            $kristine
+        );
+
+        $adrian = $this->residentRowHtml($tbody, 'MB-005');
+        $this->assertStringContainsString('data-hr-death-resident-action="open"', $adrian);
+        $this->assertStringContainsString('Open', $adrian);
+        $this->assertStringNotContainsString('Record Death', $adrian);
+        $this->assertStringContainsString(
+            route('health-records.death.show', ['householdNo' => 'HH-153', 'memberId' => 'MB-005']),
+            $adrian
         );
     }
 
@@ -208,6 +297,142 @@ class HealthRecordsDeathTest extends TestCase
         $this->assertContains('Cause of Death', $headerMatches[1]);
         $this->assertContains('Status', $headerMatches[1]);
         $this->assertStringContainsString('<caption class="visually-hidden">', $html);
+    }
+
+    public function test_listing_rows_show_name_only_and_open_from_entire_row(): void
+    {
+        $this->createListingRequest(
+            'HH-153',
+            'MB-005',
+            'Adrian Corporal',
+            'Male',
+            'SILOS',
+            'Zone 2',
+            now()->subDay()
+        );
+
+        $html = $this->withSession([UiRole::SESSION_KEY => 'bhw'])
+            ->get(route('health-records.death.index'))
+            ->getContent();
+        $tbody = $this->listingTbodyHtml($html);
+
+        $this->assertStringContainsString('Adrian Corporal', $tbody);
+        $this->assertStringNotContainsString('Male · MB-005', $tbody);
+        $this->assertStringNotContainsString('lml-hr-death__resident-meta', $tbody);
+        $this->assertStringContainsString('lml-hr-death__record-row', $tbody);
+        $this->assertStringContainsString(
+            'aria-label="Open death record for Adrian Corporal"',
+            $tbody
+        );
+        $this->assertStringContainsString(
+            route('health-records.death.show', ['householdNo' => 'HH-153', 'memberId' => 'MB-005']),
+            $tbody
+        );
+    }
+
+    public function test_death_record_back_link_returns_to_death_listing(): void
+    {
+        $html = $this->withSession([UiRole::SESSION_KEY => 'bhw'])
+            ->get(route('health-records.death.show', [
+                'householdNo' => 'HH-151',
+                'memberId' => 'MB-002',
+            ]))
+            ->getContent();
+
+        $this->assertStringContainsString('Back to Death records page', $html);
+        $this->assertStringContainsString(
+            'href="'.e(route('health-records.death.index')).'"',
+            $html
+        );
+        $this->assertStringNotContainsString(
+            route('health-records.death.residents'),
+            $html
+        );
+    }
+
+    public function test_death_record_view_uses_profile_grid_and_spaced_submitted_details(): void
+    {
+        $this->createListingRequest(
+            'HH-153',
+            'MB-005',
+            'Adrian Corporal',
+            'Male',
+            'SILOS',
+            'Zone 2',
+            now()->subDay()
+        );
+
+        $html = $this->withSession([UiRole::SESSION_KEY => 'bhw'])
+            ->get(route('health-records.death.show', [
+                'householdNo' => 'HH-153',
+                'memberId' => 'MB-005',
+            ]))
+            ->getContent();
+
+        $this->assertStringContainsString('lml-hr-death-form__meta--profile', $html);
+        $this->assertStringContainsString('lml-hr-death-form__meta-col', $html);
+        $this->assertStringContainsString('lml-hr-death-form__meta-list', $html);
+        $this->assertStringContainsString('lml-hr-death-form__profile-head', $html);
+        $this->assertStringContainsString('Submitted details', $html);
+        $this->assertStringContainsString('lml-hr-death--record', $html);
+        $this->assertStringContainsString('Registry No.', $html);
+        $this->assertStringContainsString('Death Certificate No.', $html);
+    }
+
+    public function test_death_record_profile_fields_use_three_three_two_column_distribution(): void
+    {
+        $this->createListingRequest(
+            'HH-153',
+            'MB-005',
+            'Adrian Corporal',
+            'Male',
+            'SILOS',
+            'Zone 2',
+            now()->subDay()
+        );
+
+        $html = $this->withSession([UiRole::SESSION_KEY => 'bhw'])
+            ->get(route('health-records.death.show', [
+                'householdNo' => 'HH-153',
+                'memberId' => 'MB-005',
+            ]))
+            ->getContent();
+
+        $profile = $this->deathProfileMetaHtml($html);
+        $col1 = $this->deathProfileColumnHtml($profile, '1');
+        $col2 = $this->deathProfileColumnHtml($profile, '2');
+        $col3 = $this->deathProfileColumnHtml($profile, '3');
+
+        $this->assertSame(3, substr_count($col1, '<dt>'));
+        $this->assertSame(3, substr_count($col2, '<dt>'));
+        $this->assertSame(2, substr_count($col3, '<dt>'));
+        $this->assertSame(8, substr_count($profile, '<dt>'));
+
+        $this->assertStringContainsString('<dt>Member ID</dt>', $col1);
+        $this->assertStringContainsString('<dt>Sex</dt>', $col1);
+        $this->assertStringContainsString('<dt>Date of Birth</dt>', $col1);
+        $this->assertStringNotContainsString('<dt>Zone</dt>', $col1);
+
+        $this->assertStringContainsString('<dt>Relationship</dt>', $col2);
+        $this->assertStringContainsString('<dt>Age</dt>', $col2);
+        $this->assertStringContainsString('<dt>Household</dt>', $col2);
+
+        $this->assertStringContainsString('<dt>Address</dt>', $col3);
+        $this->assertStringContainsString('<dt>Zone</dt>', $col3);
+        $this->assertLessThan(
+            strpos($col3, '<dt>Zone</dt>'),
+            strpos($col3, '<dt>Address</dt>')
+        );
+    }
+
+    public function test_death_listing_does_not_render_instructional_description(): void
+    {
+        $html = $this->withSession([UiRole::SESSION_KEY => 'bhw'])
+            ->get(route('health-records.death.index'))
+            ->getContent();
+
+        $this->assertStringNotContainsString('lml-hr-death__description', $html);
+        $this->assertStringNotContainsString('Admin verification is required', $html);
     }
 
     public function test_export_control_downloads_filtered_pdf(): void
@@ -471,6 +696,70 @@ class HealthRecordsDeathTest extends TestCase
     private function listingTbodyHtml(string $html): string
     {
         if (preg_match('/<tbody data-hr-death-tbody>(.*?)<\/tbody>/su', $html, $matches)) {
+            return $matches[1];
+        }
+
+        return '';
+    }
+
+    private function residentTbodyHtml(string $html): string
+    {
+        if (preg_match('/<tbody data-hr-death-resident-tbody>(.*?)<\/tbody>/su', $html, $matches)) {
+            return $matches[1];
+        }
+
+        return '';
+    }
+
+    private function residentRowHtml(string $tbody, string $memberId): string
+    {
+        if (! preg_match_all('/<tr\b[^>]*data-hr-death-resident-row[^>]*>.*?<\/tr>/su', $tbody, $rows)) {
+            return '';
+        }
+
+        foreach ($rows[0] as $row) {
+            if (str_contains($row, '/'.$memberId.'"') || str_contains($row, ', '.$memberId.'"')) {
+                return $row;
+            }
+        }
+
+        return '';
+    }
+
+    private function deathProfileMetaHtml(string $html): string
+    {
+        if (preg_match(
+            '/(<div class="lml-hr-death-form__meta-col" data-death-profile-col="1".*?<div class="lml-hr-death-form__meta-col" data-death-profile-col="3".*?<\/dl>\s*<\/div>)/su',
+            $html,
+            $matches
+        )) {
+            return $matches[1];
+        }
+
+        return '';
+    }
+
+    private function deathProfileColumnHtml(string $profileHtml, string $column): string
+    {
+        $nextColumn = (string) ((int) $column + 1);
+
+        if ((int) $column < 3) {
+            if (preg_match(
+                '/data-death-profile-col="'.$column.'"[^>]*>(.*?)(?=data-death-profile-col="'.$nextColumn.'")/su',
+                $profileHtml,
+                $matches
+            )) {
+                return $matches[1];
+            }
+
+            return '';
+        }
+
+        if (preg_match(
+            '/data-death-profile-col="'.$column.'"[^>]*>(.*)$/su',
+            $profileHtml,
+            $matches
+        )) {
             return $matches[1];
         }
 

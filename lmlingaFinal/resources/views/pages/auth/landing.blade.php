@@ -49,8 +49,7 @@
             </a>
 
             <nav class="d-flex align-items-center lml-header-actions" aria-label="Public navigation">
-                <x-lml.outline-button href="{{ route('login') }}">Login</x-lml.outline-button>
-                <x-lml.primary-button href="{{ route('register') }}">Register</x-lml.primary-button>
+                <x-lml.primary-button href="{{ route('login') }}">Login</x-lml.primary-button>
             </nav>
         </div>
     </header>

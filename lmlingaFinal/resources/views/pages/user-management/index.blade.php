@@ -100,14 +100,14 @@
                         <i class="bi bi-chevron-down lml-user-mgmt__category-icon" aria-hidden="true"></i>
                     </div>
 
-                    <button
-                        type="button"
+                    <a
+                        href="{{ route('user-management.health-workers.create') }}"
                         class="lml-user-mgmt__add-btn lml-focus-ring"
                         data-um-add
                     >
                         <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                        <span>ADD</span>
-                    </button>
+                        <span>Add Health Worker</span>
+                    </a>
                 </div>
             </div>
 

@@ -58,7 +58,7 @@
                     The selected demo health worker could not be loaded.
                 </p>
                 <a href="{{ route('user-management.index') }}" class="lml-hw-view__back-link lml-focus-ring">
-                    Back to User Management
+                    Back to Manage Health Workers
                 </a>
             </div>
         </div>
@@ -86,11 +86,16 @@
                     class="lml-hw-view__back lml-focus-ring"
                 >
                     <i class="bi bi-arrow-left" aria-hidden="true"></i>
-                    <span>Back to User Management</span>
+                    <span>Back to Manage Health Workers</span>
                 </a>
             </div>
 
             <article class="lml-hw-view__card" aria-labelledby="lml-hw-view-page-title">
+                @if (request()->query('created') === '1')
+                    <p class="lml-hw-wizard__toast" role="status">
+                        Health worker account created for UI preview. Database persistence is a backend task.
+                    </p>
+                @endif
                 <header class="lml-hw-view__header">
                     <span class="lml-hw-view__header-icon" aria-hidden="true">
                         <i class="bi bi-person-vcard"></i>
@@ -293,7 +298,7 @@
                         href="{{ route('user-management.health-workers.edit', ['id' => $worker['id']]) }}"
                         class="lml-hw-view__btn lml-hw-view__btn--edit lml-focus-ring"
                     >
-                        Edit Information
+                        Edit Account Details
                     </a>
                     <a
                         href="{{ route('user-management.index') }}"

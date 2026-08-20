@@ -122,9 +122,9 @@
                 </section>
 
                 <section class="lml-hr-view__section" aria-labelledby="lml-hr-view-decision-heading">
-                    <h2 id="lml-hr-view-decision-heading" class="lml-hr-view__section-title">
-                        Review Result
-                    </h2>
+                        <h2 id="lml-hr-view-decision-heading" class="lml-hr-view__section-title">
+                            Automatic verification result
+                        </h2>
                     <dl class="lml-hr-view__decision">
                         <div class="lml-hr-view__field lml-hr-view__field--decision">
                             <dt>Decision</dt>
