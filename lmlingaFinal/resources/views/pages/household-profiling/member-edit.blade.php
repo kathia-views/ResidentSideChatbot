@@ -57,7 +57,6 @@
 
                 <p class="lml-hh-member-form__context">
                     Editing <strong>{{ $demoMember['name'] }}</strong> in household <strong>{{ $demoHousehold['displayNo'] }}</strong>.
-                    Demo form only — nothing is saved.
                 </p>
 
                 <p class="lml-hh-member-form__required-note">
@@ -66,16 +65,37 @@
 
                 <div class="lml-hh-member-form__toast" data-hh-member-toast role="status" aria-live="polite" hidden></div>
 
-                <div class="lml-hh-member-form__summary" id="lml-hh-member-summary" data-hh-member-summary role="alert" tabindex="-1" hidden>
-                    <p class="lml-hh-member-form__summary-text">
-                        Please complete the required fields before updating this member.
-                    </p>
-                    <ul class="lml-hh-member-form__summary-list" data-hh-member-summary-list></ul>
-                </div>
+                @if ($errors->any())
+                    <div class="lml-hh-member-form__summary" id="lml-hh-member-summary" data-hh-member-summary role="alert" tabindex="-1">
+                        <p class="lml-hh-member-form__summary-text">
+                            Please complete the required fields before updating this member.
+                        </p>
+                        <ul class="lml-hh-member-form__summary-list" data-hh-member-summary-list>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @else
+                    <div class="lml-hh-member-form__summary" id="lml-hh-member-summary" data-hh-member-summary role="alert" tabindex="-1" hidden>
+                        <p class="lml-hh-member-form__summary-text">
+                            Please complete the required fields before updating this member.
+                        </p>
+                        <ul class="lml-hh-member-form__summary-list" data-hh-member-summary-list></ul>
+                    </div>
+                @endif
 
-                <form class="lml-hh-member-form__form" data-hh-member-form-el novalidate method="post" action="#">
+                <form
+                    class="lml-hh-member-form__form"
+                    data-hh-member-form-el
+                    novalidate
+                    method="post"
+                    action="{{ route('household-profiling.members.update', ['householdNo' => $householdNo, 'memberId' => $memberId]) }}"
+                >
+                    @csrf
+                    @method('PUT')
                     @include('pages.household-profiling.partials.member-form-fields', [
-                        'memberValues' => $memberValues,
+                        'memberValues' => session()->hasOldInput() ? old() : ($memberValues ?? []),
                     ])
 
                     <div class="lml-hh-member-form__actions">

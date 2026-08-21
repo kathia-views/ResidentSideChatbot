@@ -565,20 +565,15 @@ function initMemberForm(root) {
     });
 
     form.addEventListener('submit', (event) => {
-        event.preventDefault();
         const errors = validateForm(root, form);
         if (errors.length) {
+            event.preventDefault();
             showErrors(root, errors);
             return;
         }
 
         clearAllErrors(root);
-        showToast(
-            root,
-            mode === 'edit'
-                ? 'Member information is valid. No changes were saved because this is the UI phase.'
-                : 'Member information is complete. No data was saved because this is the UI phase.'
-        );
+        // Allow native submit to Laravel (real POST/PUT persistence).
     });
 
     const requestLeave = (triggerEl) => {

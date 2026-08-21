@@ -4,6 +4,8 @@ use App\Support\DemoCatalog;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HouseholdProfiling\DeathController;
 use App\Http\Controllers\HouseholdProfiling\HouseholdAmenitiesController;
+use App\Http\Controllers\HouseholdProfiling\HouseholdMemberController;
+use App\Http\Controllers\HouseholdProfiling\HouseholdProfilingController;
 use App\Http\Controllers\HouseholdProfiling\MaternalCareController;
 use App\Http\Controllers\HouseholdProfiling\RiskAssessmentHistoryController;
 use App\Support\DemoRiskAssessment;
@@ -250,26 +252,12 @@ Route::middleware('ui.role')->group(function () {
         [\App\Http\Controllers\EnvironmentalHealth\HouseholdWaterSupplyController::class, 'issueHandoff']
     )->name('spot-mapping.plot-handoff');
 
-    Route::view('/household-profiling', 'pages.household-profiling.index', [
-        'active' => 'household-profiling',
-        'pageTitle' => 'Household Profiling',
-        'pageSubtitle' => 'Manage and View All Registered Household in the Barangay',
-    ])->name('household-profiling.index');
+    Route::get('/household-profiling', [HouseholdProfilingController::class, 'index'])
+        ->name('household-profiling.index');
 
-    Route::get('/household-profiling/{householdNo}', function (string $householdNo) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $household = DemoCatalog::findHousehold($key);
-
-        return view('pages.household-profiling.view', [
-            'active' => 'household-profiling',
-            'pageTitle' => 'Household Profiling',
-            'pageSubtitle' => $household
-                ? 'View household details and members in Barangay La Medalla.'
-                : 'Demo household was not found.',
-            'householdNo' => $key,
-            'demoHousehold' => $household,
-        ]);
-    })->where('householdNo', 'HH-[0-9]+')->name('household-profiling.view');
+    Route::get('/household-profiling/{householdNo}', [HouseholdProfilingController::class, 'show'])
+        ->where('householdNo', 'HH-[0-9]+')
+        ->name('household-profiling.view');
 
     Route::get('/household-profiling/{householdNo}/amenities', [HouseholdAmenitiesController::class, 'show'])
         ->where('householdNo', 'HH-[0-9]+')
@@ -283,68 +271,34 @@ Route::middleware('ui.role')->group(function () {
         ->where('householdNo', 'HH-[0-9]+')
         ->name('household-profiling.amenities.update');
 
-    Route::get('/household-profiling/{householdNo}/members/create', function (string $householdNo) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $household = DemoCatalog::findHousehold($key);
+    Route::get('/household-profiling/{householdNo}/members/create', [HouseholdMemberController::class, 'create'])
+        ->where('householdNo', 'HH-[0-9]+')
+        ->name('household-profiling.members.create');
 
-        return view('pages.household-profiling.member-create', [
-            'active' => 'household-profiling',
-            'pageTitle' => 'Household Profiling',
-            'pageSubtitle' => $household
-                ? 'Add a new member to '.$key.' (demo form only).'
-                : 'Demo household was not found.',
-            'householdNo' => $key,
-            'demoHousehold' => $household,
-            'formMode' => 'create',
-            'memberValues' => [],
-        ]);
-    })->where('householdNo', 'HH-[0-9]+')->name('household-profiling.members.create');
+    Route::post('/household-profiling/{householdNo}/members', [HouseholdMemberController::class, 'store'])
+        ->where('householdNo', 'HH-[0-9]+')
+        ->name('household-profiling.members.store');
 
-    Route::get('/household-profiling/{householdNo}/members/{memberId}', function (string $householdNo, string $memberId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
+    Route::get('/household-profiling/{householdNo}/members/{memberId}', [HouseholdMemberController::class, 'show'])
+        ->where([
+            'householdNo' => 'HH-[0-9]+',
+            'memberId' => 'MB-[0-9]+',
+        ])
+        ->name('household-profiling.members.show');
 
-        return view('pages.household-profiling.member-view', [
-            'active' => 'household-profiling',
-            'pageTitle' => 'Household Profiling',
-            'pageSubtitle' => $member
-                ? 'View member information for '.$key.'.'
-                : 'Demo member was not found.',
-            'householdNo' => $key,
-            'memberId' => $memberKey,
-            'demoHousehold' => $household,
-            'demoMember' => $member,
-        ]);
-    })->where([
-        'householdNo' => 'HH-[0-9]+',
-        'memberId' => 'MB-[0-9]+',
-    ])->name('household-profiling.members.show');
+    Route::get('/household-profiling/{householdNo}/members/{memberId}/edit', [HouseholdMemberController::class, 'edit'])
+        ->where([
+            'householdNo' => 'HH-[0-9]+',
+            'memberId' => 'MB-[0-9]+',
+        ])
+        ->name('household-profiling.members.edit');
 
-    Route::get('/household-profiling/{householdNo}/members/{memberId}/edit', function (string $householdNo, string $memberId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
-
-        return view('pages.household-profiling.member-edit', [
-            'active' => 'household-profiling',
-            'pageTitle' => 'Household Profiling',
-            'pageSubtitle' => $member
-                ? 'Edit member '.$memberKey.' in '.$key.' (demo form only).'
-                : 'Demo member was not found.',
-            'householdNo' => $key,
-            'memberId' => $memberKey,
-            'demoHousehold' => $household,
-            'demoMember' => $member,
-            'formMode' => 'edit',
-            'memberValues' => $member ?? [],
-        ]);
-    })->where([
-        'householdNo' => 'HH-[0-9]+',
-        'memberId' => 'MB-[0-9]+',
-    ])->name('household-profiling.members.edit');
+    Route::put('/household-profiling/{householdNo}/members/{memberId}', [HouseholdMemberController::class, 'update'])
+        ->where([
+            'householdNo' => 'HH-[0-9]+',
+            'memberId' => 'MB-[0-9]+',
+        ])
+        ->name('household-profiling.members.update');
 
     /*
      | Child Care health-module destinations.

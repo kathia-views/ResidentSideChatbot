@@ -1,27 +1,15 @@
 {{--
     Household Profiling — Phase 2.1 list refinement.
-    Demo data only. Filters are client-side. Export / delete are UI demonstrations — nothing is persisted.
+    DB-first list with DemoCatalog fallback for unresolved household_no values.
+    Export / delete remain UI demonstrations — nothing is soft-deleted yet.
 --}}
 @extends('layouts.dashboard')
 
 @section('title', 'Household Profiling - LMLinga')
 
 @php
-    /*
-     | Shared demo catalog — same records as Spot Mapping + View Household.
-     | See resources/demo/households.php. Not persisted. No CRUD.
-     */
-    $demoCatalog = require resource_path('demo/households.php');
-    $demoHouseholds = array_values(array_map(static function (array $hh): array {
-        return [
-            'id' => 'demo-'.strtolower($hh['householdNo']),
-            'householdNo' => $hh['householdNo'],
-            'houseHead' => $hh['houseHead'],
-            'zone' => $hh['zone'],
-            'street' => $hh['street'],
-            'members' => $hh['members'],
-        ];
-    }, $demoCatalog));
+    $demoHouseholds = $demoHouseholds ?? [];
+    $demoTotal = $demoTotal ?? count($demoHouseholds);
 
     $demoZones = ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5'];
     $demoStreets = ['Layuan St.', 'Dalipay St.', 'Cateel Bay St.'];
@@ -36,8 +24,6 @@
         'male' => 108,
         'female' => 113,
     ];
-
-    $demoTotal = count($demoHouseholds);
 @endphp
 
 @section('content')
