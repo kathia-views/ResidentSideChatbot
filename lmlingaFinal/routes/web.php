@@ -17,7 +17,7 @@ Route::get('/', function () {
 Route::view('/landing', 'pages.auth.landing')->name('landing');
 
 /*
- | Staff login — UI-phase demo auth only (session UiRole).
+ | Staff login — database users preferred; demo/config fallback for UI-phase.
  | POST must never put credentials in the query string.
  */
 Route::get('/login', [\App\Http\Controllers\Auth\DemoLoginController::class, 'show'])->name('login');

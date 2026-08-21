@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Support\DemoStaffLogin;
+use App\Support\StaffAuthenticator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * UI-phase demo login. Sets UiRole session only — not production auth.
+ * Staff login. Prefers database users; falls back to demo/config accounts.
+ * Frozen login UI (email + password) is unchanged.
  */
 class DemoLoginController extends Controller
 {
@@ -23,9 +24,9 @@ class DemoLoginController extends Controller
         $identity = trim((string) $request->input('email', $request->input('full_name', '')));
         $password = (string) $request->input('password', '');
 
-        $account = DemoStaffLogin::attempt($identity, $password);
+        $result = StaffAuthenticator::attempt($identity, $password);
 
-        if ($account === null) {
+        if ($result['via'] === null) {
             return redirect()
                 ->route('login')
                 ->withInput($request->except('password'))
@@ -34,7 +35,9 @@ class DemoLoginController extends Controller
                 ]);
         }
 
-        DemoStaffLogin::establishSession($account);
+        if ($result['via'] === 'database' && $result['must_change_password']) {
+            return redirect()->route('password.change.required');
+        }
 
         return redirect()->route('dashboard');
     }
