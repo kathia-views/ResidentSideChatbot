@@ -96,6 +96,20 @@ class DeathRequest extends Model
         return DemoDeath::formatDateForDisplay($iso);
     }
 
+    /**
+     * User-facing Registry No.
+     * Prefers registry_no; falls back to historical certificate_no (D-01 defense-in-depth).
+     */
+    public function displayRegistryNo(): string
+    {
+        $registry = trim((string) $this->registry_no);
+        if ($registry !== '') {
+            return $registry;
+        }
+
+        return trim((string) $this->certificate_no);
+    }
+
     public function residentIdentityMeta(): string
     {
         $parts = [];

@@ -41,7 +41,6 @@ function initDeathRecordForm(root) {
     const submit = root.querySelector('[data-death-submit]');
     const cause = root.querySelector('[data-death-cause]');
     const date = root.querySelector('[data-death-date]');
-    const certNo = root.querySelector('[data-death-certificate-no]');
     const registryNo = root.querySelector('[data-death-registry-no]');
     const fileInput = root.querySelector('[data-death-certificate-input]');
     const fileStatus = root.querySelector('[data-death-file-status]');
@@ -71,7 +70,6 @@ function initDeathRecordForm(root) {
             Boolean(cause?.value.trim()) &&
             Boolean(date?.value.trim()) &&
             Boolean(registryNo?.value.trim()) &&
-            Boolean(certNo?.value.trim()) &&
             hasFile;
         submit.disabled = !complete;
         submit.setAttribute('aria-disabled', complete ? 'false' : 'true');
@@ -87,7 +85,7 @@ function initDeathRecordForm(root) {
         syncSubmit();
     });
 
-    [cause, date, registryNo, certNo].forEach((field) => {
+    [cause, date, registryNo].forEach((field) => {
         field?.addEventListener('input', syncSubmit);
         field?.addEventListener('change', syncSubmit);
     });

@@ -25,9 +25,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('role', 16);
-            $table->string('assigned_barangay', 100);
-            $table->string('assigned_zone', 20);
-            $table->date('date_appointed');
+            $table->string('assigned_barangay', 100)->nullable();
+            $table->string('assigned_zone', 20)->nullable();
+            $table->date('date_appointed')->nullable();
             $table->date('end_of_appointment')->nullable();
             $table->boolean('is_current')->default(false);
             $table->timestamps();

@@ -20,8 +20,9 @@ class StoreDeathRecordRequest extends FormRequest
         return [
             'cause_of_death' => ['required', 'string', 'max:500'],
             'date_of_death' => ['required', 'date', 'date_format:Y-m-d', 'before_or_equal:today'],
+            // Registry No. is the single authoritative identifying number
+            // (Death Certificate No. is the same value — not collected separately).
             'registry_no' => ['required', 'string', 'max:100'],
-            'certificate_no' => ['required', 'string', 'max:100'],
             'death_certificate' => [
                 'required',
                 'file',
@@ -43,7 +44,6 @@ class StoreDeathRecordRequest extends FormRequest
             'date_of_death.date_format' => 'Date of death must be a valid date.',
             'date_of_death.before_or_equal' => 'Date of death cannot be in the future.',
             'registry_no.required' => 'Registry number is required.',
-            'certificate_no.required' => 'Death certificate number is required.',
             'death_certificate.required' => 'Death certificate file is required.',
             'death_certificate.file' => 'Death certificate file is required.',
             'death_certificate.mimes' => 'Death certificate must be a PNG, JPG, or PDF file.',
@@ -61,7 +61,6 @@ class StoreDeathRecordRequest extends FormRequest
             'cause_of_death' => 'cause of death',
             'date_of_death' => 'date of death',
             'registry_no' => 'registry number',
-            'certificate_no' => 'death certificate number',
             'death_certificate' => 'death certificate file',
         ];
     }

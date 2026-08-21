@@ -1,6 +1,6 @@
 /**
- * Edit Health Worker — 5-step guided form (UI only).
- * Client-side step validation and shared form state. No persistence.
+ * Edit Health Worker — 5-step guided form.
+ * Client-side step validation; mutable DB workers submit via native PUT.
  */
 
 const STEP_LABELS = {
@@ -249,6 +249,18 @@ function validateField(root, field) {
         return '';
     }
 
+    // Ongoing appointments may have no known official end date.
+    if (field === 'end_of_appointment') {
+        if (!value) {
+            return '';
+        }
+        const appointed = getFieldValue(root, 'date_appointed');
+        if (appointed && value < appointed) {
+            return 'End of Appointment cannot be earlier than Date Appointed.';
+        }
+        return '';
+    }
+
     if (!value) {
         return 'This field is required.';
     }
@@ -277,13 +289,6 @@ function validateField(root, field) {
 
     if (field === 'zip_code' && !/^\d{4,5}$/.test(value)) {
         return 'Enter a valid zip code.';
-    }
-
-    if (field === 'end_of_appointment') {
-        const appointed = getFieldValue(root, 'date_appointed');
-        if (appointed && value < appointed) {
-            return 'End of Appointment cannot be earlier than Date Appointed.';
-        }
     }
 
     return '';
@@ -431,7 +436,6 @@ function initWizard(root) {
     const dob = root.querySelector('[data-hw-dob]');
     const role = root.querySelector('[data-hw-role]');
     const photoInput = root.querySelector('[data-hw-photo-input]');
-    const returnUrl = root.dataset.returnUrl || '/user-management';
 
     root.dataset.hwPhotoState = 'present';
     root.dataset.hwCurrentStep = '1';
@@ -493,15 +497,15 @@ function initWizard(root) {
     });
 
     form?.addEventListener('submit', (event) => {
-        event.preventDefault();
-
         const saveBtn = root.querySelector('[data-hw-wizard-save]');
         if (saveBtn?.disabled) {
+            event.preventDefault();
             return;
         }
 
         const result = validateAllSteps(root);
         if (!result.valid) {
+            event.preventDefault();
             setStep(root, result.step, { focusHeading: false });
             showAlert(root, 'Please complete all required information before continuing.');
             focusField(root, result.firstInvalid);
@@ -510,15 +514,25 @@ function initWizard(root) {
 
         clearAllErrors(root);
 
+        const mutable = form.getAttribute('data-hw-mutable') === '1';
+        if (!mutable) {
+            event.preventDefault();
+            if (saveBtn) {
+                saveBtn.disabled = true;
+            }
+            showToast(root, 'Demo catalog workers are read-only. Database accounts use numeric IDs.');
+            window.setTimeout(() => {
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                }
+            }, 900);
+            return;
+        }
+
         if (saveBtn) {
             saveBtn.disabled = true;
         }
-
-        showToast(root, 'Health Worker information updated successfully.');
-
-        window.setTimeout(() => {
-            window.location.href = returnUrl;
-        }, 900);
+        // Valid mutable worker — allow native PUT submit.
     });
 }
 

@@ -77,6 +77,17 @@ class AdminHealthWorkerAccountUiTest extends TestCase
         $this->get(route('user-management.health-workers.create'))->assertOk();
     }
 
+    public function test_create_form_does_not_hardcode_demo_worker_redirect(): void
+    {
+        $html = $this->withSession([UiRole::SESSION_KEY => 'admin'])
+            ->get(route('user-management.health-workers.create'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringNotContainsString('data-profile-url', $html);
+        $this->assertStringNotContainsString('/health-workers/hw-001/view', $html);
+    }
+
     public function test_worker_profile_and_edit_account_details_are_wired(): void
     {
         $view = $this->withSession([UiRole::SESSION_KEY => 'admin'])

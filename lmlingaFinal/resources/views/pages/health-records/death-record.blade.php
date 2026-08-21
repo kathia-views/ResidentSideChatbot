@@ -28,8 +28,7 @@
         $initials = HealthRecordsDeath::initials($memberName);
         $causeValue = old('cause_of_death', $deathRequest && $deathRequest->isRejected() ? $deathRequest->cause_of_death : '');
         $dateValue = old('date_of_death', $deathRequest && $deathRequest->isRejected() ? $deathRequest->date_of_death?->format('Y-m-d') : '');
-        $certificateNo = old('certificate_no', $deathRequest && $deathRequest->isRejected() ? $deathRequest->certificate_no : '');
-        $registryNo = old('registry_no', $deathRequest && $deathRequest->isRejected() ? $deathRequest->registry_no : '');
+        $registryNo = old('registry_no', $deathRequest && $deathRequest->isRejected() ? $deathRequest->displayRegistryNo() : '');
         $isFormMode = $deathMode === 'create';
         $statusMessage = session('status');
         $backUrl = route('health-records.death.index');
@@ -285,34 +284,6 @@
                                     </p>
                                 @enderror
                             </div>
-
-                            <div class="lml-hr-death-form__field">
-                                <label for="lml-death-cert-no" class="lml-hr-death-form__label">
-                                    Death Certificate No.
-                                    <span class="lml-hr-death-form__required" aria-hidden="true">*</span>
-                                    <span class="visually-hidden">(required)</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    id="lml-death-cert-no"
-                                    name="certificate_no"
-                                    class="lml-hr-death-form__input lml-focus-ring{{ $errors->has('certificate_no') ? ' is-invalid' : '' }}"
-                                    value="{{ $certificateNo }}"
-                                    maxlength="100"
-                                    required
-                                    aria-required="true"
-                                    aria-invalid="{{ $errors->has('certificate_no') ? 'true' : 'false' }}"
-                                    @if ($errors->has('certificate_no'))
-                                        aria-describedby="lml-death-cert-no-error"
-                                    @endif
-                                    data-death-certificate-no
-                                >
-                                @error('certificate_no')
-                                    <p id="lml-death-cert-no-error" class="lml-hr-death-form__error" role="alert">
-                                        {{ $message }}
-                                    </p>
-                                @enderror
-                            </div>
                         </div>
 
                         <div class="lml-hr-death-form__upload" data-death-upload>
@@ -420,11 +391,7 @@
                         </div>
                         <div>
                             <dt>Registry No.</dt>
-                            <dd>{{ $deathRequest->registry_no }}</dd>
-                        </div>
-                        <div>
-                            <dt>Death Certificate No.</dt>
-                            <dd>{{ $deathRequest->certificate_no }}</dd>
+                            <dd>{{ $deathRequest->displayRegistryNo() }}</dd>
                         </div>
                         <div>
                             <dt>Submitted by</dt>

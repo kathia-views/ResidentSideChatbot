@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\DeathRequest;
 use App\Models\ResidentStatus;
 use App\Support\DeathCertificateStorage;
+use App\Support\DeathRequestRegistryBackfill;
 use App\Support\ResidentVitalStatus;
 use App\Support\UiRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -43,9 +44,11 @@ class DeathRecordSubmissionTest extends TestCase
         $this->assertStringContainsString('MB-002', $html);
         $this->assertStringContainsString('Wife', $html);
         $this->assertStringContainsString('name="cause_of_death"', $html);
-        $this->assertStringContainsString('Death Certificate No.', $html);
         $this->assertStringContainsString('Registry No.', $html);
         $this->assertStringContainsString('name="registry_no"', $html);
+        $this->assertStringContainsString('name="death_certificate"', $html);
+        $this->assertStringNotContainsString('Death Certificate No.', $html);
+        $this->assertStringNotContainsString('name="certificate_no"', $html);
         $this->assertStringContainsString('Submit for Verification', $html);
         $this->assertMatchesRegularExpression('/data-death-submit[^>]*\bdisabled\b/u', $html);
         $this->assertStringContainsString('role="dialog"', $html);
@@ -69,9 +72,9 @@ class DeathRecordSubmissionTest extends TestCase
                 'cause_of_death',
                 'date_of_death',
                 'registry_no',
-                'certificate_no',
                 'death_certificate',
-            ]);
+            ])
+            ->assertSessionDoesntHaveErrors('certificate_no');
 
         $this->assertSame(0, DeathRequest::query()->count());
         $this->assertFalse(ResidentVitalStatus::isDeceased('HH-151', 'MB-002'));
@@ -89,7 +92,6 @@ class DeathRecordSubmissionTest extends TestCase
                 'cause_of_death' => 'Cardiac arrest',
                 'date_of_death' => '2026-07-12',
                 'registry_no' => '2026-00123',
-                'certificate_no' => 'DC-2026-00451',
                 'death_certificate' => $file,
             ])
             ->assertRedirect(route('health-records.death.show', [
@@ -102,7 +104,8 @@ class DeathRecordSubmissionTest extends TestCase
         $this->assertSame(DeathRequest::STATUS_PENDING, $request->status);
         $this->assertSame('Cardiac arrest', $request->cause_of_death);
         $this->assertSame('2026-00123', $request->registry_no);
-        $this->assertSame('DC-2026-00451', $request->certificate_no);
+        // Legacy column mirrors registry_no (single identifying number).
+        $this->assertSame('2026-00123', $request->certificate_no);
         $this->assertSame('bhw', $request->submitted_by_role);
         $this->assertFalse(ResidentVitalStatus::isDeceased('HH-151', 'MB-002'));
         $this->assertNull(ResidentStatus::forMember('HH-151', 'MB-002'));
@@ -115,9 +118,14 @@ class DeathRecordSubmissionTest extends TestCase
             'memberId' => 'MB-002',
         ]));
         $page->assertOk();
+        $html = $page->getContent();
         $page->assertSee('Pending Admin Verification', false);
         $page->assertSee('has not received final deceased status', false);
         $page->assertDontSee('name="cause_of_death"', false);
+        $this->assertStringContainsString('Registry No.', $html);
+        $this->assertStringContainsString('2026-00123', $html);
+        $this->assertStringNotContainsString('Death Certificate No.', $html);
+        $this->assertStringContainsString('Death Certificate', $html);
     }
 
     public function test_duplicate_pending_request_is_rejected(): void
@@ -126,7 +134,6 @@ class DeathRecordSubmissionTest extends TestCase
             'cause_of_death' => 'Cardiac arrest',
             'date_of_death' => '2026-07-12',
             'registry_no' => '2026-00123',
-            'certificate_no' => 'DC-2026-00451',
             'death_certificate' => UploadedFile::fake()->create('a.pdf', 80, 'application/pdf'),
         ];
 
@@ -183,7 +190,7 @@ class DeathRecordSubmissionTest extends TestCase
         );
     }
 
-    public function test_registry_no_and_certificate_no_persist_independently(): void
+    public function test_registry_no_is_the_single_identifying_number(): void
     {
         $file = UploadedFile::fake()->create('certificate.pdf', 120, 'application/pdf');
 
@@ -195,15 +202,165 @@ class DeathRecordSubmissionTest extends TestCase
                 'cause_of_death' => 'Cardiac arrest',
                 'date_of_death' => '2026-07-12',
                 'registry_no' => '2026-00123',
-                'certificate_no' => 'DC-2026-00451',
                 'death_certificate' => $file,
             ])
             ->assertRedirect();
 
         $request = DeathRequest::query()->firstOrFail();
         $this->assertSame('2026-00123', $request->registry_no);
-        $this->assertSame('DC-2026-00451', $request->certificate_no);
-        $this->assertNotSame($request->registry_no, $request->certificate_no);
+        $this->assertSame($request->registry_no, $request->certificate_no);
+    }
+
+    public function test_d01_backfill_copies_historical_certificate_no_into_blank_registry_no(): void
+    {
+        $historical = DeathRequest::query()->create([
+            'household_no' => 'HH-153',
+            'member_id' => 'MB-005',
+            'resident_name' => 'Adrian Corporal',
+            'resident_sex' => 'Male',
+            'resident_age' => 35,
+            'zone' => 'Zone 1',
+            'household_display_no' => 'HH 153',
+            'address' => 'Layuan St., Brgy. La Medalla',
+            'cause_of_death' => 'SILOS',
+            'date_of_death' => '2026-08-03',
+            'registry_no' => '',
+            'certificate_no' => 'DC-OLD-001',
+            'certificate_disk' => 'death_certificates',
+            'certificate_path' => 'HH-153/MB-005/1/file.pdf',
+            'certificate_original_name' => 'certificate.pdf',
+            'certificate_mime' => 'application/pdf',
+            'certificate_size' => 1200,
+            'certificate_extension' => 'pdf',
+            'status' => DeathRequest::STATUS_PENDING,
+            'submitted_by_name' => 'Sarah',
+            'submitted_by_role' => 'bhw',
+            'submitted_at' => now()->subDay(),
+        ]);
+
+        $mirrored = DeathRequest::query()->create([
+            'household_no' => 'HH-151',
+            'member_id' => 'MB-001',
+            'resident_name' => 'Kristine Reyes',
+            'resident_sex' => 'Male',
+            'resident_age' => 34,
+            'zone' => 'Zone 2',
+            'household_display_no' => 'HH 151',
+            'address' => 'Sample Address',
+            'cause_of_death' => 'Cardiac arrest',
+            'date_of_death' => '2026-07-12',
+            'registry_no' => 'REG-001',
+            'certificate_no' => 'REG-001',
+            'certificate_disk' => 'death_certificates',
+            'certificate_path' => 'HH-151/MB-001/1/file.pdf',
+            'certificate_original_name' => 'certificate.pdf',
+            'certificate_mime' => 'application/pdf',
+            'certificate_size' => 1200,
+            'certificate_extension' => 'pdf',
+            'status' => DeathRequest::STATUS_PENDING,
+            'submitted_by_name' => 'Sarah',
+            'submitted_by_role' => 'bhw',
+            'submitted_at' => now()->subHours(2),
+        ]);
+
+        $protected = DeathRequest::query()->create([
+            'household_no' => 'HH-152',
+            'member_id' => 'MB-004',
+            'resident_name' => 'Carlo Evangelista',
+            'resident_sex' => 'Male',
+            'resident_age' => 40,
+            'zone' => 'Zone 5',
+            'household_display_no' => 'HH 152',
+            'address' => 'Sample Address',
+            'cause_of_death' => 'Accident',
+            'date_of_death' => '2026-06-01',
+            'registry_no' => 'REG-CURRENT',
+            'certificate_no' => 'OLD-CERT',
+            'certificate_disk' => 'death_certificates',
+            'certificate_path' => 'HH-152/MB-004/1/file.pdf',
+            'certificate_original_name' => 'certificate.pdf',
+            'certificate_mime' => 'application/pdf',
+            'certificate_size' => 1200,
+            'certificate_extension' => 'pdf',
+            'status' => DeathRequest::STATUS_PENDING,
+            'submitted_by_name' => 'Sarah',
+            'submitted_by_role' => 'bhw',
+            'submitted_at' => now()->subHours(3),
+        ]);
+
+        $this->assertSame(1, DeathRequestRegistryBackfill::run());
+
+        $historical->refresh();
+        $mirrored->refresh();
+        $protected->refresh();
+
+        $this->assertSame('DC-OLD-001', $historical->registry_no);
+        $this->assertSame('DC-OLD-001', $historical->certificate_no);
+        $this->assertSame('DC-OLD-001', $historical->displayRegistryNo());
+
+        $this->assertSame('REG-001', $mirrored->registry_no);
+        $this->assertSame('REG-001', $mirrored->certificate_no);
+
+        $this->assertSame('REG-CURRENT', $protected->registry_no);
+        $this->assertSame('OLD-CERT', $protected->certificate_no);
+        $this->assertSame('REG-CURRENT', $protected->displayRegistryNo());
+
+        $this->assertSame(0, DeathRequestRegistryBackfill::run());
+    }
+
+    public function test_d01_historical_registry_displays_on_admin_verify_and_death_record(): void
+    {
+        $request = DeathRequest::query()->create([
+            'household_no' => 'HH-153',
+            'member_id' => 'MB-005',
+            'resident_name' => 'Adrian Corporal',
+            'resident_sex' => 'Male',
+            'resident_age' => 35,
+            'zone' => 'Zone 1',
+            'household_display_no' => 'HH 153',
+            'address' => 'Layuan St., Brgy. La Medalla',
+            'cause_of_death' => 'SILOS',
+            'date_of_death' => '2026-08-03',
+            'registry_no' => '',
+            'certificate_no' => 'DC-OLD-001',
+            'certificate_disk' => 'death_certificates',
+            'certificate_path' => 'HH-153/MB-005/1/file.pdf',
+            'certificate_original_name' => 'certificate.pdf',
+            'certificate_mime' => 'application/pdf',
+            'certificate_size' => 1200,
+            'certificate_extension' => 'pdf',
+            'status' => DeathRequest::STATUS_PENDING,
+            'submitted_by_name' => 'Sarah',
+            'submitted_by_role' => 'bhw',
+            'submitted_at' => now()->subDay(),
+        ]);
+
+        DeathRequestRegistryBackfill::run();
+        $request->refresh();
+
+        $adminHtml = $this->withSession([UiRole::SESSION_KEY => 'admin'])
+            ->get(route('death-requests.show', $request))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Registry No.', $adminHtml);
+        $this->assertStringContainsString('DC-OLD-001', $adminHtml);
+        $this->assertStringNotContainsString('Death Certificate No.', $adminHtml);
+        $this->assertStringNotContainsString('>Certificate No.</dt>', $adminHtml);
+        $this->assertStringNotContainsString('name="certificate_no"', $adminHtml);
+
+        $recordHtml = $this->withSession([UiRole::SESSION_KEY => 'bhw'])
+            ->get(route('health-records.death.show', [
+                'householdNo' => 'HH-153',
+                'memberId' => 'MB-005',
+            ]))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Registry No.', $recordHtml);
+        $this->assertStringContainsString('DC-OLD-001', $recordHtml);
+        $this->assertStringNotContainsString('Death Certificate No.', $recordHtml);
+        $this->assertStringNotContainsString('name="certificate_no"', $recordHtml);
     }
 
     private function submitPending(): void
@@ -216,7 +373,6 @@ class DeathRecordSubmissionTest extends TestCase
                 'cause_of_death' => 'Cardiac arrest',
                 'date_of_death' => '2026-07-12',
                 'registry_no' => '2026-00123',
-                'certificate_no' => 'DC-2026-00451',
                 'death_certificate' => UploadedFile::fake()->create('certificate.pdf', 120, 'application/pdf'),
             ])
             ->assertRedirect();

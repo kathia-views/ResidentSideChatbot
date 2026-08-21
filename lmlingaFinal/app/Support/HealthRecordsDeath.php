@@ -427,7 +427,9 @@ final class HealthRecordsDeath
             'date_of_death' => $request->formattedDateOfDeath(),
             'date_of_death_iso' => $iso,
             'year' => $year,
-            'certificate_no' => $request->certificate_no,
+            'registry_no' => $request->displayRegistryNo(),
+            // Legacy alias: certificate_no mirrors the user-facing Registry No.
+            'certificate_no' => $request->displayRegistryNo(),
             'status' => $request->status,
             'status_label' => $request->statusLabel(),
             'open_url' => route('health-records.death.show', [

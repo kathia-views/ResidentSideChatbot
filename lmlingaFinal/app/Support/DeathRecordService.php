@@ -12,7 +12,7 @@ final class DeathRecordService
     /**
      * @param  array<string, mixed>  $household
      * @param  array<string, mixed>  $member
-     * @param  array{cause_of_death: string, date_of_death: string, registry_no: string, certificate_no: string}  $payload
+     * @param  array{cause_of_death: string, date_of_death: string, registry_no: string}  $payload
      */
     public function submit(
         array $household,
@@ -36,8 +36,9 @@ final class DeathRecordService
         }
 
         $actor = $this->actor();
+        $registryNo = trim((string) $payload['registry_no']);
 
-        return DB::transaction(function () use ($household, $member, $payload, $certificate, $householdNo, $memberId, $actor): DeathRequest {
+        return DB::transaction(function () use ($household, $member, $payload, $certificate, $householdNo, $memberId, $actor, $registryNo): DeathRequest {
             $request = DeathRequest::query()->create([
                 'household_no' => $householdNo,
                 'member_id' => $memberId,
@@ -49,8 +50,10 @@ final class DeathRecordService
                 'address' => (string) ($household['address'] ?? ''),
                 'cause_of_death' => $payload['cause_of_death'],
                 'date_of_death' => $payload['date_of_death'],
-                'registry_no' => $payload['registry_no'],
-                'certificate_no' => $payload['certificate_no'],
+                'registry_no' => $registryNo,
+                // Legacy column retained for NOT NULL schema compatibility.
+                // Registry No. is the single authoritative identifying number.
+                'certificate_no' => $registryNo,
                 'certificate_disk' => DeathCertificateStorage::DISK,
                 'certificate_path' => 'pending',
                 'certificate_original_name' => '',

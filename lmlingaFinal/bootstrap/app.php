@@ -17,5 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Health Worker Edit uses hw_* password field names (frozen UI contract).
+        $exceptions->dontFlash([
+            'hw_password',
+            'hw_password_confirmation',
+        ]);
     })->create();

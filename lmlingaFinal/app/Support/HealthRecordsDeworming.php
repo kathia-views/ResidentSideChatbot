@@ -210,20 +210,24 @@ final class HealthRecordsDeworming
     }
 
     /**
-     * Whether the household member is within the project Child Care program scope
-     * ({@see HealthRecordsChildCare::isChildCarePopulation()}).
+     * Whether Deworming records may be managed for this household member.
      *
-     * @param  array<string, mixed>  $member
+     * Deworming is available for ALL ages. This does NOT use
+     * {@see HealthRecordsChildCare::isChildCarePopulation()} / 0–59 months.
+     * Callers must resolve $member from the requested household first.
+     *
+     * @param  array<string, mixed>  $member  Member row already scoped to a household
      */
     public static function memberCanManageRecords(array $member): bool
     {
-        return HealthRecordsChildCare::isChildCarePopulation($member);
+        // Reject empty placeholders only. Age is never a gate for Deworming.
+        return $member !== [];
     }
 
     /**
      * Deworming history for a household member resolved by stable identifiers.
-     * Returns monitoring fixture rows only when the member is Child Care–eligible
-     * and their display-name slug matches a monitoring key.
+     * Returns monitoring fixture rows only when the member belongs to the household
+     * and their display-name slug matches a monitoring key (no age filter).
      *
      * @return list<array<string, mixed>>
      */

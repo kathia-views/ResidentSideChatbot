@@ -30,7 +30,7 @@ class HouseholdProfilingHouseholdMemberViewTest extends TestCase
         $this->assertSame(1, substr_count($response->getContent(), 'id="lml-hh-mv-child-care-toggle"'));
     }
 
-    public function test_child_care_panel_contains_three_module_links_for_ineligible_member(): void
+    public function test_child_care_panel_contains_four_module_links_including_deworming_for_all_ages(): void
     {
         $response = $this->get(route('household-profiling.members.show', [
             'householdNo' => 'HH-151',
@@ -43,8 +43,9 @@ class HouseholdProfilingHouseholdMemberViewTest extends TestCase
         $this->assertSame(1, substr_count($html, 'Child Immunization'));
         $this->assertSame(1, substr_count($html, 'School-Based Immunization'));
         $this->assertSame(1, substr_count($html, 'Child Nutrition'));
-        $this->assertSame(0, substr_count($html, 'bi-capsule'));
-        $this->assertStringNotContainsString(
+        $this->assertSame(1, substr_count($html, '>Deworming</'));
+        $this->assertSame(1, substr_count($html, 'bi-capsule'));
+        $this->assertStringContainsString(
             'href="'.e(route('household-profiling.members.deworming', [
                 'householdNo' => 'HH-151',
                 'memberId' => 'MB-001',
@@ -85,7 +86,7 @@ class HouseholdProfilingHouseholdMemberViewTest extends TestCase
             'href="'.e(route('household-profiling.members.child-nutrition', $params)).'"',
             false
         );
-        $response->assertDontSee(
+        $response->assertSee(
             'href="'.e(route('household-profiling.members.deworming', $params)).'"',
             false
         );

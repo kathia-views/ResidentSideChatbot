@@ -1,7 +1,7 @@
 {{--
-    Admin-only Create Health Worker account (UI only).
-    Visual reuse of the former public Create Account form, now inside the Admin shell.
-    No database persistence.
+    Admin-only Create Health Worker account.
+    Slim form posts to store: authentication account + role only.
+    Does not prefill or redirect to demo health-worker profiles (e.g. hw-001).
 --}}
 @extends('layouts.dashboard')
 
@@ -24,7 +24,6 @@
     <div
         class="lml-hw-wizard lml-hw-create"
         data-lml-hw-create
-        data-profile-url="{{ route('user-management.health-workers.view', ['id' => 'hw-001']) }}"
     >
         <div class="lml-hw-wizard__toolbar">
             <a
@@ -55,9 +54,9 @@
                 class="lml-hw-wizard__alert"
                 role="alert"
                 aria-live="assertive"
-                hidden
+                @if (! $errors->any()) hidden @endif
                 data-hw-create-alert
-            ></p>
+            >@if ($errors->any()){{ $errors->first() }}@endif</p>
 
             <p
                 class="lml-hw-wizard__toast"
@@ -69,22 +68,25 @@
 
             <form
                 class="lml-hw-wizard__form lml-hw-create__form"
+                method="post"
+                action="{{ route('user-management.health-workers.store') }}"
                 data-hw-create-form
                 novalidate
             >
+                @csrf
                 <fieldset class="lml-hw-create__name-group">
                     <legend class="lml-form-label lml-form-label--required">Full Name</legend>
                     <div class="lml-hw-wizard__fields lml-hw-wizard__fields--2">
                         <x-lml.form-group label="First Name" name="hw_first_name" for="hw_first_name" :required="true" class="lml-hw-wizard__field">
-                            <x-lml.text-input id="hw_first_name" name="first_name" :required="true" autocomplete="given-name" data-hw-create-field="first_name" />
+                            <x-lml.text-input id="hw_first_name" name="first_name" :required="true" :value="old('first_name')" autocomplete="given-name" data-hw-create-field="first_name" />
                             <div class="lml-form-error" id="hw_first_name-error" hidden data-hw-create-error="first_name"></div>
                         </x-lml.form-group>
                         <x-lml.form-group label="Last Name" name="hw_last_name" for="hw_last_name" :required="true" class="lml-hw-wizard__field">
-                            <x-lml.text-input id="hw_last_name" name="last_name" :required="true" autocomplete="family-name" data-hw-create-field="last_name" />
+                            <x-lml.text-input id="hw_last_name" name="last_name" :required="true" :value="old('last_name')" autocomplete="family-name" data-hw-create-field="last_name" />
                             <div class="lml-form-error" id="hw_last_name-error" hidden data-hw-create-error="last_name"></div>
                         </x-lml.form-group>
                         <x-lml.form-group label="Middle Name" name="hw_middle_name" for="hw_middle_name" :required="false" class="lml-hw-wizard__field">
-                            <x-lml.text-input id="hw_middle_name" name="middle_name" autocomplete="additional-name" data-hw-create-field="middle_name" />
+                            <x-lml.text-input id="hw_middle_name" name="middle_name" :value="old('middle_name')" autocomplete="additional-name" data-hw-create-field="middle_name" />
                             <div class="lml-form-error" id="hw_middle_name-error" hidden data-hw-create-error="middle_name"></div>
                         </x-lml.form-group>
                     </div>
@@ -92,19 +94,19 @@
 
                 <div class="lml-hw-wizard__fields lml-hw-wizard__fields--2">
                     <x-lml.form-group label="Email" name="hw_email" for="hw_email" :required="true" class="lml-hw-wizard__field">
-                        <x-lml.text-input type="email" id="hw_email" name="email" :required="true" autocomplete="email" placeholder="name@example.com" data-hw-create-field="email" />
+                        <x-lml.text-input type="email" id="hw_email" name="email" :required="true" :value="old('email')" autocomplete="email" placeholder="name@example.com" data-hw-create-field="email" />
                         <div class="lml-form-error" id="hw_email-error" hidden data-hw-create-error="email"></div>
                     </x-lml.form-group>
                     <x-lml.form-group label="Mobile Number" name="hw_mobile" for="hw_mobile" :required="true" class="lml-hw-wizard__field">
-                        <x-lml.text-input type="tel" id="hw_mobile" name="mobile" :required="true" inputmode="tel" autocomplete="tel" placeholder="09XXXXXXXXX" data-hw-create-field="mobile" />
+                        <x-lml.text-input type="tel" id="hw_mobile" name="mobile" :required="true" :value="old('mobile')" inputmode="tel" autocomplete="tel" placeholder="09XXXXXXXXX" data-hw-create-field="mobile" />
                         <div class="lml-form-error" id="hw_mobile-error" hidden data-hw-create-error="mobile"></div>
                     </x-lml.form-group>
                     <x-lml.form-group label="Role" name="hw_role" for="hw_role" :required="true" class="lml-hw-wizard__field">
-                        <x-lml.select-input id="hw_role" name="role" placeholder="Select" :options="$roleOptions" :required="true" data-hw-create-field="role" />
+                        <x-lml.select-input id="hw_role" name="role" placeholder="Select" :options="$roleOptions" :selected="old('role')" :required="true" data-hw-create-field="role" />
                         <div class="lml-form-error" id="hw_role-error" hidden data-hw-create-error="role"></div>
                     </x-lml.form-group>
                     <x-lml.form-group label="Account Status" name="hw_status" for="hw_status" :required="true" class="lml-hw-wizard__field">
-                        <x-lml.select-input id="hw_status" name="status" :options="$statusOptions" selected="Active" :required="true" data-hw-create-field="status" />
+                        <x-lml.select-input id="hw_status" name="status" :options="$statusOptions" :selected="old('status', 'Active')" :required="true" data-hw-create-field="status" />
                         <div class="lml-form-error" id="hw_status-error" hidden data-hw-create-error="status"></div>
                     </x-lml.form-group>
                     <x-lml.form-group

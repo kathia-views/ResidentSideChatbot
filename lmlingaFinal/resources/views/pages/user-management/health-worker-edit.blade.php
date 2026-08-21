@@ -1,6 +1,6 @@
 {{--
-    Edit Health Worker — 5-step guided form (UI only).
-    Prefills from demo catalog. No database persistence.
+    Edit Health Worker — 5-step guided form.
+    Prefills from DB (numeric id) or demo catalog (hw-*). Persistence via PUT for DB workers.
 --}}
 @extends('layouts.dashboard')
 
@@ -115,23 +115,28 @@
                     class="lml-hw-wizard__alert"
                     role="alert"
                     aria-live="assertive"
-                    hidden
+                    @if (! $errors->any()) hidden @endif
                     data-hw-wizard-alert
-                ></p>
+                >@if ($errors->any()){{ $errors->first() }}@endif</p>
 
                 <p
                     class="lml-hw-wizard__toast"
                     role="status"
                     aria-live="polite"
-                    hidden
+                    @if (! session('status')) hidden @endif
                     data-hw-wizard-toast
-                ></p>
+                >{{ session('status') }}</p>
 
                 <form
                     class="lml-hw-wizard__form"
+                    method="post"
+                    action="{{ route('user-management.health-workers.update', ['id' => $worker['id']]) }}"
                     data-hw-wizard-form
+                    data-hw-mutable="{{ ($workerIsMutable ?? false) ? '1' : '0' }}"
                     novalidate
                 >
+                    @csrf
+                    @method('PUT')
                     <input type="hidden" name="worker_id" value="{{ $worker['id'] }}" data-hw-field="id">
 
                     {{-- Step 1 --}}
@@ -365,8 +370,8 @@
                                 <x-lml.text-input type="date" id="hw_date_appointed" name="hw_date_appointed" :required="true" :value="$worker['date_appointed'] ?? ''" data-hw-field="date_appointed" />
                                 <div class="lml-form-error" id="hw_date_appointed-error" hidden data-hw-error="date_appointed"></div>
                             </x-lml.form-group>
-                            <x-lml.form-group label="End of Appointment" name="hw_end_appointment" for="hw_end_appointment" :required="true" class="lml-hw-wizard__field">
-                                <x-lml.text-input type="date" id="hw_end_appointment" name="hw_end_appointment" :required="true" :value="$worker['end_of_appointment'] ?? ''" data-hw-field="end_of_appointment" />
+                            <x-lml.form-group label="End of Appointment" name="hw_end_appointment" for="hw_end_appointment" :required="false" :optional="true" class="lml-hw-wizard__field">
+                                <x-lml.text-input type="date" id="hw_end_appointment" name="hw_end_appointment" :required="false" :value="$worker['end_of_appointment'] ?? ''" data-hw-field="end_of_appointment" />
                                 <div class="lml-form-error" id="hw_end_appointment-error" hidden data-hw-error="end_of_appointment"></div>
                             </x-lml.form-group>
                         </div>

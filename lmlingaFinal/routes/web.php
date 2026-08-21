@@ -95,49 +95,35 @@ Route::middleware('ui.role')->group(function () {
      | Admin-only modules — route layer matches sidebar visibility.
      */
     Route::middleware('ui.admin')->group(function () {
-        Route::get('/user-management', function () {
-            $isResidents = request()->query('tab') === 'residents';
+        Route::get('/user-management', [
+            \App\Http\Controllers\Admin\HealthWorkerAccountController::class,
+            'index',
+        ])->name('user-management.index');
 
-            return view('pages.user-management.index', [
-                'active' => 'user-management',
-                'pageTitle' => 'User Management',
-                'pageSubtitle' => $isResidents
-                    ? 'Manage user accounts and access permissions.'
-                    : 'Manage accounts of the Barangay Health Workers',
-            ]);
-        })->name('user-management.index');
+        Route::get('/user-management/health-workers/create', [
+            \App\Http\Controllers\Admin\HealthWorkerAccountController::class,
+            'create',
+        ])->name('user-management.health-workers.create');
 
-        Route::get('/user-management/health-workers/create', function () {
-            return view('pages.user-management.health-worker-create', [
-                'active' => 'user-management',
-                'pageTitle' => 'Create Account',
-                'pageSubtitle' => 'Add a Barangay Health Worker account with a temporary password.',
-            ]);
-        })->name('user-management.health-workers.create');
+        Route::post('/user-management/health-workers', [
+            \App\Http\Controllers\Admin\HealthWorkerAccountController::class,
+            'store',
+        ])->name('user-management.health-workers.store');
 
-        Route::get('/user-management/health-workers/{id}/edit', function (string $id) {
-            $worker = DemoCatalog::findHealthWorker($id);
+        Route::get('/user-management/health-workers/{id}/edit', [
+            \App\Http\Controllers\Admin\HealthWorkerAccountController::class,
+            'edit',
+        ])->where('id', 'hw-[0-9]+|[0-9]+')->name('user-management.health-workers.edit');
 
-            return view('pages.user-management.health-worker-edit', [
-                'active' => 'user-management',
-                'pageTitle' => 'Edit Account Details',
-                'pageSubtitle' => "Update the selected health worker's profile and account information.",
-                'workerId' => $id,
-                'demoWorker' => $worker,
-            ]);
-        })->where('id', 'hw-[0-9]+')->name('user-management.health-workers.edit');
+        Route::put('/user-management/health-workers/{id}', [
+            \App\Http\Controllers\Admin\HealthWorkerAccountController::class,
+            'update',
+        ])->where('id', 'hw-[0-9]+|[0-9]+')->name('user-management.health-workers.update');
 
-        Route::get('/user-management/health-workers/{id}/view', function (string $id) {
-            $worker = DemoCatalog::findHealthWorker($id);
-
-            return view('pages.user-management.health-worker-view', [
-                'active' => 'user-management',
-                'pageTitle' => 'View Health Worker Information',
-                'pageSubtitle' => "Review the selected health worker's personal, contact, address, employment, and account information.",
-                'workerId' => $id,
-                'demoWorker' => $worker,
-            ]);
-        })->where('id', 'hw-[0-9]+')->name('user-management.health-workers.view');
+        Route::get('/user-management/health-workers/{id}/view', [
+            \App\Http\Controllers\Admin\HealthWorkerAccountController::class,
+            'show',
+        ])->where('id', 'hw-[0-9]+|[0-9]+')->name('user-management.health-workers.view');
 
         /*
          | Resident accounts (User Management → Residents) — ra-* IDs.

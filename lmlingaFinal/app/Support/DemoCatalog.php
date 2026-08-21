@@ -12,10 +12,7 @@ final class DemoCatalog
      */
     public static function healthWorkers(): array
     {
-        /** @var list<array<string, mixed>> $catalog */
-        $catalog = require resource_path('demo/health-workers.php');
-
-        return $catalog;
+        return HealthWorkerUiCatalog::all();
     }
 
     /**
@@ -23,7 +20,7 @@ final class DemoCatalog
      */
     public static function findHealthWorker(string $id): ?array
     {
-        return collect(self::healthWorkers())->firstWhere('id', $id);
+        return HealthWorkerUiCatalog::find($id);
     }
 
     /**

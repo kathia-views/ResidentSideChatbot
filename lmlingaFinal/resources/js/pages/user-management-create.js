@@ -1,6 +1,6 @@
 /**
- * Admin Create Health Worker account — UI validation only.
- * Does not persist accounts. Redirects to a demo worker profile after a valid submit.
+ * Admin Create Health Worker account — client validation then real POST.
+ * Server persists authentication account + role; profile completion is via Edit.
  */
 
 function isValidEmail(value) {
@@ -87,10 +87,8 @@ function generatePassword() {
 function initCreate(root) {
     const form = root.querySelector('[data-hw-create-form]');
     const alertEl = root.querySelector('[data-hw-create-alert]');
-    const toast = root.querySelector('[data-hw-create-toast]');
     const generateBtn = root.querySelector('[data-hw-create-generate]');
     const generateStatus = root.querySelector('[data-hw-create-generate-status]');
-    const profileUrl = root.dataset.profileUrl || '/user-management';
 
     generateBtn?.addEventListener('click', () => {
         const password = generatePassword();
@@ -110,9 +108,9 @@ function initCreate(root) {
     });
 
     form?.addEventListener('submit', (event) => {
-        event.preventDefault();
         const firstInvalid = validate(root);
         if (firstInvalid) {
+            event.preventDefault();
             if (alertEl) {
                 alertEl.hidden = false;
                 alertEl.textContent = 'Please complete all required information before creating this account.';
@@ -121,18 +119,10 @@ function initCreate(root) {
             return;
         }
 
-        if (alertEl) {
+        if (alertEl && !alertEl.textContent?.trim()) {
             alertEl.hidden = true;
-            alertEl.textContent = '';
         }
-        if (toast) {
-            toast.hidden = false;
-            toast.textContent = 'Account details captured for UI preview. Persistence is a backend task.';
-        }
-
-        window.setTimeout(() => {
-            window.location.href = `${profileUrl}${profileUrl.includes('?') ? '&' : '?'}created=1`;
-        }, 800);
+        // Valid — allow native POST to Laravel store route.
     });
 }
 

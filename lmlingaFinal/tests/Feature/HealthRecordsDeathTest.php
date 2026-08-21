@@ -376,7 +376,7 @@ class HealthRecordsDeathTest extends TestCase
         $this->assertStringContainsString('Submitted details', $html);
         $this->assertStringContainsString('lml-hr-death--record', $html);
         $this->assertStringContainsString('Registry No.', $html);
-        $this->assertStringContainsString('Death Certificate No.', $html);
+        $this->assertStringNotContainsString('Death Certificate No.', $html);
     }
 
     public function test_death_record_profile_fields_use_three_three_two_column_distribution(): void

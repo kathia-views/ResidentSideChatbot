@@ -70,11 +70,7 @@
                 </div>
                 <div>
                     <dt>Registry No.</dt>
-                    <dd>{{ $deathRequest->registry_no }}</dd>
-                </div>
-                <div>
-                    <dt>Certificate No.</dt>
-                    <dd>{{ $deathRequest->certificate_no }}</dd>
+                    <dd>{{ $deathRequest->displayRegistryNo() }}</dd>
                 </div>
                 <div>
                     <dt>Submitted By</dt>

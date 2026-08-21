@@ -1,6 +1,7 @@
 {{--
-    View Health Worker Information — read-only profile (UI only).
-    Prefills from demo catalog. No database persistence.
+    View Health Worker Information — read-only profile.
+    Binds to HealthWorkerUiCatalog (database user or demo hw-* fallback).
+    Empty/missing profile fields render as "—" — never invent demo values here.
 --}}
 @extends('layouts.dashboard')
 
@@ -55,7 +56,7 @@
             <div class="lml-hw-view__card">
                 <h2 class="lml-hw-view__missing-title">Health worker not found</h2>
                 <p class="lml-hw-view__missing-text">
-                    The selected demo health worker could not be loaded.
+                    The selected health worker could not be loaded.
                 </p>
                 <a href="{{ route('user-management.index') }}" class="lml-hw-view__back-link lml-focus-ring">
                     Back to Manage Health Workers
@@ -91,9 +92,9 @@
             </div>
 
             <article class="lml-hw-view__card" aria-labelledby="lml-hw-view-page-title">
-                @if (request()->query('created') === '1')
+                @if (session('status'))
                     <p class="lml-hw-wizard__toast" role="status">
-                        Health worker account created for UI preview. Database persistence is a backend task.
+                        {{ session('status') }}
                     </p>
                 @endif
                 <header class="lml-hw-view__header">

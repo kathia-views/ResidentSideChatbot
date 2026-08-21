@@ -7,7 +7,7 @@
 @section('title', 'User Management - LMLinga')
 
 @php
-    $demoWorkers = require resource_path('demo/health-workers.php');
+    $demoWorkers = $healthWorkers ?? \App\Support\DemoCatalog::healthWorkers();
     $demoResidents = \App\Support\DemoCatalog::residentAccounts();
     $demoTotal = count($demoWorkers);
     $categoryOptions = [

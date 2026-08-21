@@ -144,11 +144,12 @@ class DeathRequestAdminTest extends TestCase
         $this->assertStringContainsString('Cardiac arrest', $html);
         $this->assertStringContainsString('July 12, 2026', $html);
         $this->assertStringContainsString('2026-00123', $html);
-        $this->assertStringContainsString('DC-2026-00451', $html);
         $this->assertStringContainsString('Cause of Death', $html);
         $this->assertStringContainsString('Date of Death', $html);
         $this->assertStringContainsString('Registry No.', $html);
-        $this->assertStringContainsString('Certificate No.', $html);
+        $this->assertStringNotContainsString('>Certificate No.</dt>', $html);
+        $this->assertStringNotContainsString('Death Certificate No.', $html);
+        $this->assertStringNotContainsString('DC-2026-00451', $html);
         $this->assertStringContainsString('Submitted By', $html);
         $this->assertStringContainsString('Submitted On', $html);
         $this->assertStringContainsString('Death Certificate', $html);
@@ -262,7 +263,6 @@ class DeathRequestAdminTest extends TestCase
                 'cause_of_death' => 'Cardiac arrest',
                 'date_of_death' => '2026-07-12',
                 'registry_no' => '2026-00123',
-                'certificate_no' => 'DC-2026-00451',
                 'death_certificate' => UploadedFile::fake()->create('certificate.pdf', 120, 'application/pdf'),
             ])
             ->assertRedirect();
