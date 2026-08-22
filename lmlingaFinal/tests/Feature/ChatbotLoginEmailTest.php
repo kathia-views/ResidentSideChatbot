@@ -16,6 +16,8 @@ class ChatbotLoginEmailTest extends TestCase
         $this->assertStringContainsString('placeholder="name@example.com"', $html);
         $this->assertStringNotContainsString('name="full_name"', $html);
         $this->assertStringNotContainsString('>Full Name</', $html);
-        $this->assertStringNotContainsString('href="'.e(route('chatbot.register')).'"', $html);
+        $this->assertStringContainsString("Don't have an account?", $html);
+        $this->assertStringContainsString('href="'.e(route('chatbot.register')).'"', $html);
+        $this->assertStringNotContainsString('href="'.e(route('register')).'"', $html);
     }
 }

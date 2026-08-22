@@ -357,13 +357,8 @@ class ChildImmunizationDestinationTest extends TestCase
             $html
         );
         $this->assertStringNotContainsString('method="post"', strtolower($html));
-        $this->assertFalse(
-            Route::has('household-profiling.members.child-immunization.store')
-            || Route::has('household-profiling.members.birth-history.update')
-            || Route::has('household-profiling.members.birth-history.store')
-            || Route::has('household-profiling.members.child-immunization.birth-history.store')
-            || Route::has('household-profiling.members.child-immunization.birth-history.update')
-        );
+        $this->assertFalse(Route::has('household-profiling.members.child-immunization.store'));
+        $this->assertTrue(Route::has('household-profiling.members.child-immunization.birth-history.store'));
     }
 
     public function test_named_birth_history_edit_route_resolves(): void

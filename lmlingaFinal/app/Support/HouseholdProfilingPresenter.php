@@ -116,7 +116,7 @@ final class HouseholdProfilingPresenter
         $birthday = $resident->birthday;
         $age = $birthday instanceof Carbon ? $birthday->age : null;
 
-        return [
+        $data = [
             'id' => (string) $resident->member_no,
             'name' => self::fullName($resident),
             'relationship' => (string) $resident->relation,
@@ -139,6 +139,13 @@ final class HouseholdProfilingPresenter
             'medical_history' => is_array($resident->medical_history) ? $resident->medical_history : [],
             'medical_others' => (string) ($resident->medical_others ?? ''),
         ];
+
+        $resident->loadMissing('childBirthHistory');
+        if ($resident->childBirthHistory !== null) {
+            $data['birth_history'] = ChildBirthHistoryService::toPresentation($resident->childBirthHistory);
+        }
+
+        return $data;
     }
 
     public static function fullName(Resident $resident): string

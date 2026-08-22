@@ -90,6 +90,16 @@
                                 Login
                             </button>
                         </div>
+
+                        <p class="lml-chatbot-login__footer">
+                            Don't have an account?
+                            <a
+                                href="{{ route('chatbot.register') }}"
+                                class="lml-chatbot-login__register-link lml-focus-ring"
+                            >
+                                Register
+                            </a>
+                        </p>
                     </form>
                 </section>
             </main>

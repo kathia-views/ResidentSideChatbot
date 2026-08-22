@@ -1,9 +1,7 @@
 {{--
-    Household Profiling — Birth History dedicated edit page (UI preview).
-    Continuous vertical scroll. Demo data only.
-
-    Persistence: No approved Birth History save endpoint or data model exists.
-    Save is preview-safe (sessionStorage + return toast). Not server-persisted.
+    Household Profiling — Birth History dedicated edit page.
+    Continuous vertical scroll. Demo fallback remains preview-safe (sessionStorage).
+    DB-backed residents persist via POST when a persisted resident is resolved.
 --}}
 @extends('layouts.dashboard')
 
@@ -12,6 +10,8 @@
 @section('content')
     @php
         $emptyRecord = 'No record';
+        $persistenceSource = $persistenceSource ?? 'preview';
+        $isDbPersisted = $persistenceSource === 'db';
         $memberName = (string) ($demoMember['name'] ?? 'Member');
         $memberSex = (string) ($demoMember['sex'] ?? '');
         $memberAge = $demoMember['age'] ?? null;
@@ -50,18 +50,26 @@
         $memberMiddleName = (string) ($demoMember['middle_name'] ?? '');
         $memberDobDisplay = $dateBirth !== '' ? $dateBirth : '';
 
-        $birthWeightForm = filled(data_get($demoMember, 'birth_history.weight'))
-            ? (string) data_get($demoMember, 'birth_history.weight')
-            : '';
-        $birthLengthForm = filled(data_get($demoMember, 'birth_history.length'))
-            ? (string) data_get($demoMember, 'birth_history.length')
-            : '';
-        $birthPcabForm = filled(data_get($demoMember, 'birth_history.pcab'))
-            ? (string) data_get($demoMember, 'birth_history.pcab')
-            : '';
-        $birthBfDateForm = filled(data_get($demoMember, 'birth_history.breastfeeding_date'))
-            ? (string) data_get($demoMember, 'birth_history.breastfeeding_date')
-            : '';
+        $birthWeightForm = filled(data_get($birthHistoryForm ?? null, 'weight'))
+            ? (string) data_get($birthHistoryForm, 'weight')
+            : (filled(data_get($demoMember, 'birth_history.weight'))
+                ? (string) data_get($demoMember, 'birth_history.weight')
+                : '');
+        $birthLengthForm = filled(data_get($birthHistoryForm ?? null, 'length'))
+            ? (string) data_get($birthHistoryForm, 'length')
+            : (filled(data_get($demoMember, 'birth_history.length'))
+                ? (string) data_get($demoMember, 'birth_history.length')
+                : '');
+        $birthPcabForm = filled(data_get($birthHistoryForm ?? null, 'pcab'))
+            ? (string) data_get($birthHistoryForm, 'pcab')
+            : (filled(data_get($demoMember, 'birth_history.pcab'))
+                ? (string) data_get($demoMember, 'birth_history.pcab')
+                : '');
+        $birthBfDateForm = filled(data_get($birthHistoryForm ?? null, 'breastfeeding_date'))
+            ? (string) data_get($birthHistoryForm, 'breastfeeding_date')
+            : (filled(data_get($demoMember, 'birth_history.breastfeeding_date'))
+                ? (string) data_get($demoMember, 'birth_history.breastfeeding_date')
+                : '');
 
         $pcabOptions = [
             'at_least_2_doses_1_month_prior' => 'At least 2 doses received at least 1 month prior to delivery',
@@ -76,16 +84,26 @@
             'householdNo' => $householdNo,
             'memberId' => $memberId,
         ]);
+
+        $storeUrl = $isDbPersisted
+            ? route('household-profiling.members.child-immunization.birth-history.store', [
+                'householdNo' => $householdNo,
+                'memberId' => $memberId,
+            ])
+            : null;
     @endphp
 
     <div
         class="lml-bh-edit"
         data-lml-bh-edit
-        data-demo="true"
-        data-persistence="preview"
+        data-demo="{{ $isDbPersisted ? 'false' : 'true' }}"
+        data-persistence="{{ $persistenceSource }}"
         data-household-no="{{ $householdNo }}"
         data-member-id="{{ $memberId }}"
         data-return-url="{{ $backUrl }}"
+        @if ($storeUrl)
+            data-store-url="{{ $storeUrl }}"
+        @endif
     >
         <a
             href="{{ $backUrl }}"
@@ -181,15 +199,23 @@
                 id="lml-child-imm-birth-editor"
                 class="lml-child-imm__birth-editor"
                 data-child-imm-birth-editor
-                data-persistence="preview"
+                data-persistence="{{ $persistenceSource }}"
                 aria-labelledby="lml-child-imm-birth-editor-heading"
             >
                 <form
                     class="lml-child-imm__birth-editor-form"
                     data-child-imm-birth-form
-                    data-persistence="preview"
-                    novalidate
+                    data-persistence="{{ $persistenceSource }}"
+                    @if ($isDbPersisted && $storeUrl)
+                        method="post"
+                        action="{{ $storeUrl }}"
+                    @else
+                        novalidate
+                    @endif
                 >
+                    @if ($isDbPersisted && $storeUrl)
+                        @csrf
+                    @endif
                     <header class="lml-child-imm__birth-editor-head">
                         <h2
                             id="lml-child-imm-birth-editor-heading"

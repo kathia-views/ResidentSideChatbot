@@ -1,11 +1,10 @@
 /**
- * Birth History dedicated edit page — preview-safe Save (no server write).
+ * Birth History dedicated edit page.
  *
- * Saves optional field values to sessionStorage for the current browser session,
- * then returns to Child Immunization. Close is a named-route link (no save).
+ * Preview mode (demo/unresolved): sessionStorage + return navigation.
+ * DB mode (persisted resident): native POST to server store endpoint.
  *
- * Escape matches Close: navigate via the Close link href without writing
- * sessionStorage or submitting the form (discard unsaved edits).
+ * Escape matches Close: navigate via the Close link href without saving.
  */
 
 const STORAGE_PREFIX = 'lml.birthHistory.preview.';
@@ -145,25 +144,28 @@ function initBirthHistoryEdit(root) {
     const householdNo = root.getAttribute('data-household-no') || '';
     const memberId = root.getAttribute('data-member-id') || '';
     const returnUrl = root.getAttribute('data-return-url') || '';
+    const persistence = root.getAttribute('data-persistence') || 'preview';
     const form = root.querySelector('[data-child-imm-birth-form]');
 
     if (!(form instanceof HTMLFormElement)) {
         return;
     }
 
-    const preview = readPreview(householdNo, memberId);
-    applyPreviewToForm(form, preview);
-    applyPreviewToSummary(root, preview);
+    if (persistence === 'preview') {
+        const preview = readPreview(householdNo, memberId);
+        applyPreviewToForm(form, preview);
+        applyPreviewToSummary(root, preview);
 
-    form.addEventListener('submit', (event) => {
-        event.preventDefault();
-        const values = snapshotBirthForm(form);
-        writePreview(householdNo, memberId, values, { announce: true });
+        form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const values = snapshotBirthForm(form);
+            writePreview(householdNo, memberId, values, { announce: true });
 
-        if (returnUrl) {
-            window.location.assign(returnUrl);
-        }
-    });
+            if (returnUrl) {
+                window.location.assign(returnUrl);
+            }
+        });
+    }
 
     // Escape ≡ Close: discard unsaved edits (no sessionStorage write / no submit).
     // Ignore modifiers, IME composition, key-repeat, and focused native <select>.

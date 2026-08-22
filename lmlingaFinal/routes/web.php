@@ -2,6 +2,7 @@
 
 use App\Support\DemoCatalog;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\HouseholdProfiling\ChildBirthHistoryController;
 use App\Http\Controllers\HouseholdProfiling\DeathController;
 use App\Http\Controllers\HouseholdProfiling\HouseholdAmenitiesController;
 use App\Http\Controllers\HouseholdProfiling\HouseholdMemberController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\HouseholdProfiling\MaternalCareController;
 use App\Http\Controllers\HouseholdProfiling\RiskAssessmentHistoryController;
 use App\Support\DemoRiskAssessment;
 use App\Support\DemoFamilyPlanning;
+use App\Support\ChildBirthHistoryService;
 use App\Support\HealthMemberIdentity;
 use App\Support\HealthRecordsDeworming;
 
@@ -335,6 +337,23 @@ Route::middleware('ui.role')->group(function () {
         $memberKey = $ctx['memberId'];
         $household = $ctx['household'];
         $member = $ctx['member'];
+        $persistenceSource = $ctx['source'] === 'db' ? 'db' : 'preview';
+        $birthHistoryForm = null;
+
+        if ($ctx['resident'] !== null) {
+            $ctx['resident']->loadMissing('childBirthHistory');
+            $record = $ctx['resident']->childBirthHistory;
+            if ($record !== null) {
+                $birthHistoryForm = [
+                    'weight' => $record->birth_weight_kg !== null ? (string) $record->birth_weight_kg : '',
+                    'length' => $record->birth_length_cm !== null ? (string) $record->birth_length_cm : '',
+                    'pcab' => ChildBirthHistoryService::pcabFormValue($record),
+                    'breastfeeding_date' => $record->breastfeeding_date instanceof \Illuminate\Support\Carbon
+                        ? $record->breastfeeding_date->format('Y-m-d')
+                        : (string) ($record->breastfeeding_date ?? ''),
+                ];
+            }
+        }
 
         return view('pages.household-profiling.child-immunization-birth-history-edit', [
             'active' => 'household-profiling',
@@ -346,11 +365,21 @@ Route::middleware('ui.role')->group(function () {
             'memberId' => $memberKey,
             'demoHousehold' => $household,
             'demoMember' => $member,
+            'persistenceSource' => $persistenceSource,
+            'birthHistoryForm' => $birthHistoryForm,
         ]);
     })->where([
         'householdNo' => 'HH-[0-9]+',
         'memberId' => 'MB-[0-9]+',
     ])->name('household-profiling.members.child-immunization.birth-history.edit');
+
+    Route::post(
+        '/household-profiling/{householdNo}/members/{memberId}/child-immunization/birth-history',
+        [ChildBirthHistoryController::class, 'store']
+    )->where([
+        'householdNo' => 'HH-[0-9]+',
+        'memberId' => 'MB-[0-9]+',
+    ])->name('household-profiling.members.child-immunization.birth-history.store');
 
     Route::get('/household-profiling/{householdNo}/members/{memberId}/school-based-immunization', function (string $householdNo, string $memberId) {
         $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);

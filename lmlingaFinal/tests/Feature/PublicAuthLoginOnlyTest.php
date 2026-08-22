@@ -26,28 +26,40 @@ class PublicAuthLoginOnlyTest extends TestCase
         $this->assertStringNotContainsString('method="get"', $html);
         $this->assertStringNotContainsString('href="'.e(route('register')).'"', $html);
         $this->assertStringNotContainsString('Don’t have any account?', $html);
+        $this->assertStringNotContainsString("Don't have an account?", $html);
         $this->assertStringNotContainsString('>Register</', $html);
     }
 
-    public function test_chatbot_landing_exposes_login_only(): void
+    public function test_chatbot_landing_exposes_login_and_register(): void
     {
         $html = $this->get(route('chatbot.landing'))->assertOk()->getContent();
 
         $this->assertStringContainsString('href="'.e(route('chatbot.login')).'"', $html);
-        $this->assertStringContainsString('Login', $html);
-        $this->assertStringNotContainsString('href="'.e(route('chatbot.register')).'"', $html);
-        $this->assertStringNotContainsString('>Register</', $html);
+        $this->assertStringContainsString('href="'.e(route('chatbot.register')).'"', $html);
+        $this->assertStringContainsString('lml-chatbot-hero__btn--primary', $html);
+        $this->assertStringContainsString('lml-chatbot-hero__btn--secondary', $html);
+        $this->assertMatchesRegularExpression('/>\s*Login\s*</', $html);
+        $this->assertMatchesRegularExpression('/>\s*Register\s*</', $html);
     }
 
-    public function test_legacy_registration_routes_remain_reachable_but_are_not_linked_from_login(): void
+    public function test_chatbot_login_links_to_resident_registration(): void
+    {
+        $html = $this->get(route('chatbot.login'))->assertOk()->getContent();
+
+        $this->assertStringContainsString("Don't have an account?", $html);
+        $this->assertStringContainsString('href="'.e(route('chatbot.register')).'"', $html);
+        $this->assertStringContainsString('lml-chatbot-login__register-link', $html);
+        $this->assertStringNotContainsString('href="'.e(route('register')).'"', $html);
+    }
+
+    public function test_legacy_registration_routes_remain_reachable_but_staff_login_stays_unlinked(): void
     {
         $this->get(route('register'))->assertOk();
         $this->get(route('chatbot.register'))->assertOk();
 
         $login = $this->get(route('login'))->assertOk()->getContent();
-        $chatbotLogin = $this->get(route('chatbot.login'))->assertOk()->getContent();
 
         $this->assertStringNotContainsString(route('register'), $login);
-        $this->assertStringNotContainsString(route('chatbot.register'), $chatbotLogin);
+        $this->assertStringNotContainsString(route('chatbot.register'), $login);
     }
 }
