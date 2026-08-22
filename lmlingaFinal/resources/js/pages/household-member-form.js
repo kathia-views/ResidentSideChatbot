@@ -1,6 +1,6 @@
 /**
- * Household Profiling — Add New Member form (UI phase).
- * Client-side validation only. Nothing is persisted.
+ * Household Profiling — Add/Edit Member form (DB-05 Phase 4).
+ * Client-side validation; valid submits post/put to Laravel for DB persistence.
  */
 
 const FIELD_LABELS = {

@@ -17,6 +17,9 @@ final class HouseholdProfilingPresenter
      */
     public static function fromModel(Household $household): array
     {
+        // Member blades may still call lml_demo_* helpers; ensure they exist on DB-only paths.
+        DemoCatalog::ensureHouseholdHelpers();
+
         $household->loadMissing('residents');
         $residents = $household->residents;
         $head = $residents->first(
@@ -67,7 +70,7 @@ final class HouseholdProfilingPresenter
     }
 
     /**
-     * @return array{id: string, householdNo: string, houseHead: string, zone: string, street: string, members: int}
+     * @return array{id: string, householdNo: string, houseHead: string, zone: string, street: string, members: int, source: 'db'}
      */
     public static function listRowFromModel(Household $household): array
     {
@@ -80,12 +83,13 @@ final class HouseholdProfilingPresenter
             'zone' => (string) $presentation['zone'],
             'street' => (string) $presentation['street'],
             'members' => (int) $presentation['members'],
+            'source' => 'db',
         ];
     }
 
     /**
      * @param  array<string, mixed>  $demoHousehold
-     * @return array{id: string, householdNo: string, houseHead: string, zone: string, street: string, members: int}
+     * @return array{id: string, householdNo: string, houseHead: string, zone: string, street: string, members: int, source: 'demo'}
      */
     public static function listRowFromDemo(array $demoHousehold): array
     {
@@ -98,6 +102,7 @@ final class HouseholdProfilingPresenter
             'zone' => (string) ($demoHousehold['zone'] ?? ''),
             'street' => (string) ($demoHousehold['street'] ?? ''),
             'members' => (int) ($demoHousehold['members'] ?? count($demoHousehold['memberList'] ?? [])),
+            'source' => 'demo',
         ];
     }
 
@@ -106,6 +111,8 @@ final class HouseholdProfilingPresenter
      */
     public static function memberFromModel(Resident $resident): array
     {
+        DemoCatalog::ensureHouseholdHelpers();
+
         $birthday = $resident->birthday;
         $age = $birthday instanceof Carbon ? $birthday->age : null;
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateRiskAssessmentSectionRequest;
 use App\Support\DemoCatalog;
 use App\Support\DemoRiskAssessment;
+use App\Support\HealthMemberIdentity;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -77,13 +78,13 @@ class RiskAssessmentHistoryController extends Controller
         string $assessmentId,
         string $section
     ): RedirectResponse {
-        $hh = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $mb = DemoCatalog::normalizeMemberId($memberId);
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $hh = $ctx['householdNo'];
+        $mb = $ctx['memberId'];
         $id = strtoupper(trim($assessmentId));
         $sectionKey = DemoRiskAssessment::normalizeSection($section);
 
-        $household = DemoCatalog::findHousehold($hh);
-        $member = $household ? lml_demo_find_member($household, $mb) : null;
+        $member = $ctx['member'];
 
         if (! $member || $sectionKey === null) {
             return redirect()
@@ -145,11 +146,12 @@ class RiskAssessmentHistoryController extends Controller
      */
     private function resolveContext(string $householdNo, string $memberId, string $assessmentId): array
     {
-        $hh = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $mb = DemoCatalog::normalizeMemberId($memberId);
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $hh = $ctx['householdNo'];
+        $mb = $ctx['memberId'];
         $id = strtoupper(trim($assessmentId));
-        $household = DemoCatalog::findHousehold($hh);
-        $member = $household ? lml_demo_find_member($household, $mb) : null;
+        $household = $ctx['household'];
+        $member = $ctx['member'];
         $assessment = $member ? DemoRiskAssessment::find($hh, $mb, $id) : null;
 
         return [

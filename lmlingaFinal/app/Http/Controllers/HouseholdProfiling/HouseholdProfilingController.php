@@ -24,6 +24,7 @@ class HouseholdProfilingController extends Controller
             'pageSubtitle' => 'Manage and View All Registered Household in the Barangay',
             'demoHouseholds' => $demoHouseholds,
             'demoTotal' => count($demoHouseholds),
+            'profilingSummary' => $this->households->profilingSummary(),
         ]);
     }
 
@@ -40,6 +41,7 @@ class HouseholdProfilingController extends Controller
                 : 'Household was not found.',
             'householdNo' => $key,
             'demoHousehold' => $resolved['presentation'] ?? null,
+            'householdSource' => $resolved['source'] ?? null,
         ]);
     }
 }

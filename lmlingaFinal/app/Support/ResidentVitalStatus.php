@@ -52,6 +52,7 @@ final class ResidentVitalStatus
                 'member_id' => $memberId,
             ],
             [
+                'resident_id' => $request->resident_id,
                 'status' => ResidentStatus::STATUS_DECEASED,
                 'death_request_id' => $request->id,
                 'recorded_at' => now(),

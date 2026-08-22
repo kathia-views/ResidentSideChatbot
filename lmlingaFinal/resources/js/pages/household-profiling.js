@@ -1,6 +1,7 @@
 /**
- * Household Profiling — Phase 2.1 list UI interactions.
- * Demo-only client filters. No persistence, no real CRUD, no export files.
+ * Household Profiling — list UI interactions (DB-05 Phase 4).
+ * Filters/search are client-side. Delete/export remain UI demonstrations.
+ * Demo-only Add keeps a preview toast; DB Add uses a real create link.
  */
 
 function showToast(root, message) {

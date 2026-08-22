@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\DeathRequest;
+use App\Models\Resident;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -10,18 +11,33 @@ use Illuminate\Validation\ValidationException;
 final class DeathRecordService
 {
     /**
-     * @param  array<string, mixed>  $household
-     * @param  array<string, mixed>  $member
+     * Persist a pending death request for a DB-backed resident.
+     *
+     * @param  array<string, mixed>  $household  Presentation shape (zone/address/displayNo)
+     * @param  array<string, mixed>  $member  Presentation shape (name/sex/age)
      * @param  array{cause_of_death: string, date_of_death: string, registry_no: string}  $payload
      */
     public function submit(
         array $household,
         array $member,
         array $payload,
-        UploadedFile $certificate
+        UploadedFile $certificate,
+        Resident $resident
     ): DeathRequest {
         $householdNo = DemoCatalog::normalizeHouseholdNo((string) ($household['householdNo'] ?? ''));
-        $memberId = DemoCatalog::normalizeMemberId((string) ($member['id'] ?? ''));
+        $memberId = DemoCatalog::normalizeMemberId((string) ($member['id'] ?? $resident->member_no));
+
+        if ($householdNo === '' || $memberId === '') {
+            throw ValidationException::withMessages([
+                'cause_of_death' => 'Resident identity could not be resolved.',
+            ]);
+        }
+
+        if ((int) $resident->id <= 0) {
+            throw ValidationException::withMessages([
+                'cause_of_death' => 'A persisted resident is required to submit a death record.',
+            ]);
+        }
 
         if (DeathRequest::approvedForMember($householdNo, $memberId) !== null) {
             throw ValidationException::withMessages([
@@ -38,10 +54,11 @@ final class DeathRecordService
         $actor = $this->actor();
         $registryNo = trim((string) $payload['registry_no']);
 
-        return DB::transaction(function () use ($household, $member, $payload, $certificate, $householdNo, $memberId, $actor, $registryNo): DeathRequest {
+        return DB::transaction(function () use ($household, $member, $payload, $certificate, $householdNo, $memberId, $actor, $registryNo, $resident): DeathRequest {
             $request = DeathRequest::query()->create([
                 'household_no' => $householdNo,
                 'member_id' => $memberId,
+                'resident_id' => $resident->id,
                 'resident_name' => (string) ($member['name'] ?? 'Resident'),
                 'resident_sex' => (string) ($member['sex'] ?? ''),
                 'resident_age' => is_numeric($member['age'] ?? null) ? (int) $member['age'] : null,

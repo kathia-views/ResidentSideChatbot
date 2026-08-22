@@ -191,15 +191,13 @@ final class HealthRecordsDeworming
      */
     public static function findChildForMember(string $householdNo, string $memberId): ?array
     {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        if ($household === null) {
-            return null;
-        }
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $key = $ctx['householdNo'];
+        $memberKey = $ctx['memberId'];
+        $household = $ctx['household'];
+        $member = $ctx['member'];
 
-        $member = lml_demo_find_member($household, $memberKey);
-        if ($member === null) {
+        if ($household === null || $member === null) {
             return null;
         }
 
@@ -233,14 +231,8 @@ final class HealthRecordsDeworming
      */
     public static function recordsForMember(string $householdNo, string $memberId): array
     {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        if ($household === null) {
-            return [];
-        }
-
-        $member = lml_demo_find_member($household, $memberKey);
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $member = $ctx['member'];
         if ($member === null || ! self::memberCanManageRecords($member)) {
             return [];
         }

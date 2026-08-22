@@ -1,16 +1,21 @@
 {{--
-    Household Profiling — View Household (Phase 3 UI).
-    Demo data only. Loads from resources/demo/households.php by householdNo.
+    Household Profiling — View Household (DB-05 Phase 4).
+    DB-first via HouseholdMemberResolver; DemoCatalog fallback for reads only.
 --}}
 @extends('layouts.dashboard')
 
 @section('title', ($demoHousehold['displayNo'] ?? $householdNo ?? 'Household') . ' - LMLinga')
 
+@php
+    $householdSource = $householdSource ?? null;
+    $isDbHousehold = $householdSource === 'db';
+@endphp
+
 @section('content')
     <div
         class="lml-hh-view"
         data-lml-hh-view
-        data-demo="true"
+        data-source="{{ $householdSource ?? 'none' }}"
         @if ($demoHousehold)
             data-household-no="{{ $demoHousehold['householdNo'] }}"
         @endif
@@ -40,10 +45,8 @@
                     Household not found
                 </h2>
                 <p class="lml-hh-view__not-found-message">
-                    No demo household matches
+                    No registered or demo household matches
                     <strong>{{ $householdNo }}</strong>.
-                    This UI preview only knows the shared La Medalla demo catalog
-                    (for example HH-151). Nothing was loaded from a database.
                 </p>
                 <a
                     href="{{ route('household-profiling.index') }}"
@@ -196,7 +199,7 @@
                     <div class="lml-hh-view__table-scroll" tabindex="0" role="region" aria-label="Household members table">
                         <table class="lml-hh-view__table">
                             <caption class="visually-hidden">
-                                Demo members for {{ $demoHousehold['householdNo'] }}. Nothing is saved.
+                                Members for {{ $demoHousehold['householdNo'] }}.
                             </caption>
                             <thead>
                                 <tr>
@@ -225,7 +228,12 @@
                                         <td data-label="Relationship">{{ $member['relationship'] }}</td>
                                         <td data-label="Age">{{ $member['age'] }}</td>
                                         <td data-label="Sex">{{ $member['sex'] }}</td>
-                                        <td data-label="Occupation">{{ lml_demo_member_display($member, 'occupation') }}</td>
+                                        <td data-label="Occupation">
+                                            @php
+                                                $occupation = (string) ($member['occupation'] ?? '');
+                                            @endphp
+                                            {{ $occupation === 'None / N/A' ? 'N/A' : $occupation }}
+                                        </td>
                                         <td data-label="Actions">
                                             <div
                                                 class="lml-hh-view__actions"
@@ -274,11 +282,17 @@
                 @endif
             </section>
 
-            <p class="lml-hh-view__demo-note">
-                Demo preview for Barangay La Medalla. This page uses the same householdNo
-                ({{ $demoHousehold['householdNo'] }}) as Spot Mapping and the Profiling list.
-                Records are placeholders and are not saved.
-            </p>
+            @if ($isDbHousehold)
+                <p class="lml-hh-view__demo-note">
+                    Registered household {{ $demoHousehold['householdNo'] }}.
+                    Member add and edit save to the database.
+                </p>
+            @else
+                <p class="lml-hh-view__demo-note">
+                    Demo catalog household {{ $demoHousehold['householdNo'] }}.
+                    This is a read-only compatibility fallback — members are not saved.
+                </p>
+            @endif
 
             <div
                 class="lml-hh-view__dialog-backdrop"

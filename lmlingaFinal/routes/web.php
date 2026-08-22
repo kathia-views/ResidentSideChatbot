@@ -10,6 +10,7 @@ use App\Http\Controllers\HouseholdProfiling\MaternalCareController;
 use App\Http\Controllers\HouseholdProfiling\RiskAssessmentHistoryController;
 use App\Support\DemoRiskAssessment;
 use App\Support\DemoFamilyPlanning;
+use App\Support\HealthMemberIdentity;
 use App\Support\HealthRecordsDeworming;
 
 Route::get('/', function () {
@@ -306,10 +307,11 @@ Route::middleware('ui.role')->group(function () {
      | are real UI destinations (preview-safe; no persistence endpoints yet).
      */
     Route::get('/household-profiling/{householdNo}/members/{memberId}/child-immunization', function (string $householdNo, string $memberId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $key = $ctx['householdNo'];
+        $memberKey = $ctx['memberId'];
+        $household = $ctx['household'];
+        $member = $ctx['member'];
 
         return view('pages.household-profiling.child-immunization', [
             'active' => 'household-profiling',
@@ -328,10 +330,11 @@ Route::middleware('ui.role')->group(function () {
     ])->name('household-profiling.members.child-immunization');
 
     Route::get('/household-profiling/{householdNo}/members/{memberId}/child-immunization/birth-history/edit', function (string $householdNo, string $memberId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $key = $ctx['householdNo'];
+        $memberKey = $ctx['memberId'];
+        $household = $ctx['household'];
+        $member = $ctx['member'];
 
         return view('pages.household-profiling.child-immunization-birth-history-edit', [
             'active' => 'household-profiling',
@@ -350,10 +353,11 @@ Route::middleware('ui.role')->group(function () {
     ])->name('household-profiling.members.child-immunization.birth-history.edit');
 
     Route::get('/household-profiling/{householdNo}/members/{memberId}/school-based-immunization', function (string $householdNo, string $memberId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $key = $ctx['householdNo'];
+        $memberKey = $ctx['memberId'];
+        $household = $ctx['household'];
+        $member = $ctx['member'];
 
         return view('pages.household-profiling.school-based-immunization', [
             'active' => 'household-profiling',
@@ -372,10 +376,11 @@ Route::middleware('ui.role')->group(function () {
     ])->name('household-profiling.members.school-based-immunization');
 
     Route::get('/household-profiling/{householdNo}/members/{memberId}/child-nutrition', function (string $householdNo, string $memberId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $key = $ctx['householdNo'];
+        $memberKey = $ctx['memberId'];
+        $household = $ctx['household'];
+        $member = $ctx['member'];
 
         return view('pages.household-profiling.child-nutrition', [
             'active' => 'household-profiling',
@@ -394,10 +399,11 @@ Route::middleware('ui.role')->group(function () {
     ])->name('household-profiling.members.child-nutrition');
 
     Route::get('/household-profiling/{householdNo}/members/{memberId}/deworming', function (string $householdNo, string $memberId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $key = $ctx['householdNo'];
+        $memberKey = $ctx['memberId'];
+        $household = $ctx['household'];
+        $member = $ctx['member'];
         $child = HealthRecordsDeworming::findChildForMember($key, $memberKey);
         $canManage = $member !== null && HealthRecordsDeworming::memberCanManageRecords($member);
 
@@ -420,10 +426,11 @@ Route::middleware('ui.role')->group(function () {
     ])->name('household-profiling.members.deworming');
 
     Route::get('/household-profiling/{householdNo}/members/{memberId}/deworming/create', function (string $householdNo, string $memberId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $key = $ctx['householdNo'];
+        $memberKey = $ctx['memberId'];
+        $household = $ctx['household'];
+        $member = $ctx['member'];
 
         if ($member === null || ! HealthRecordsDeworming::memberCanManageRecords($member)) {
             return redirect()->route('household-profiling.members.deworming', [
@@ -456,10 +463,11 @@ Route::middleware('ui.role')->group(function () {
      | Distinct from barangay-wide Health Records modules.
      */
     Route::get('/household-profiling/{householdNo}/members/{memberId}/risk-assessment', function (string $householdNo, string $memberId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $key = $ctx['householdNo'];
+        $memberKey = $ctx['memberId'];
+        $household = $ctx['household'];
+        $member = $ctx['member'];
 
         return view('pages.household-profiling.risk-assessment-history', [
             'active' => 'household-profiling',
@@ -481,10 +489,11 @@ Route::middleware('ui.role')->group(function () {
     ])->name('household-profiling.members.risk-assessment');
 
     Route::get('/household-profiling/{householdNo}/members/{memberId}/risk-assessment/create', function (string $householdNo, string $memberId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $key = $ctx['householdNo'];
+        $memberKey = $ctx['memberId'];
+        $household = $ctx['household'];
+        $member = $ctx['member'];
 
         return view('pages.household-profiling.risk-assessment-form', [
             'active' => 'household-profiling',
@@ -549,10 +558,11 @@ Route::middleware('ui.role')->group(function () {
      | and from demographic member field fp_user.
      */
     Route::get('/household-profiling/{householdNo}/members/{memberId}/family-planning', function (string $householdNo, string $memberId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $key = $ctx['householdNo'];
+        $memberKey = $ctx['memberId'];
+        $household = $ctx['household'];
+        $member = $ctx['member'];
 
         return view('pages.household-profiling.family-planning-history', [
             'active' => 'household-profiling',
@@ -574,10 +584,11 @@ Route::middleware('ui.role')->group(function () {
     ])->name('household-profiling.members.family-planning.index');
 
     Route::get('/household-profiling/{householdNo}/members/{memberId}/family-planning/create', function (string $householdNo, string $memberId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $key = $ctx['householdNo'];
+        $memberKey = $ctx['memberId'];
+        $household = $ctx['household'];
+        $member = $ctx['member'];
 
         return view('pages.household-profiling.family-planning-form', [
             'active' => 'household-profiling',
@@ -598,10 +609,11 @@ Route::middleware('ui.role')->group(function () {
     ])->name('household-profiling.members.family-planning.create');
 
     Route::get('/household-profiling/{householdNo}/members/{memberId}/family-planning/{visitId}', function (string $householdNo, string $memberId, string $visitId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $key = $ctx['householdNo'];
+        $memberKey = $ctx['memberId'];
+        $household = $ctx['household'];
+        $member = $ctx['member'];
         $visit = $member
             ? DemoFamilyPlanning::find($key, $memberKey, $visitId)
             : null;
@@ -626,10 +638,11 @@ Route::middleware('ui.role')->group(function () {
     ])->name('household-profiling.members.family-planning.show');
 
     Route::get('/household-profiling/{householdNo}/members/{memberId}/family-planning/{visitId}/edit', function (string $householdNo, string $memberId, string $visitId) {
-        $key = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $memberKey = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($key);
-        $member = $household ? lml_demo_find_member($household, $memberKey) : null;
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
+        $key = $ctx['householdNo'];
+        $memberKey = $ctx['memberId'];
+        $household = $ctx['household'];
+        $member = $ctx['member'];
         $visit = $member
             ? DemoFamilyPlanning::find($key, $memberKey, $visitId)
             : null;

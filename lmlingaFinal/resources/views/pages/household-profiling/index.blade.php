@@ -1,6 +1,7 @@
 {{--
-    Household Profiling — Phase 2.1 list refinement.
+    Household Profiling — Phase 4 list.
     DB-first list with DemoCatalog fallback for unresolved household_no values.
+    Summary cards count registered (database) records only.
     Export / delete remain UI demonstrations — nothing is soft-deleted yet.
 --}}
 @extends('layouts.dashboard')
@@ -10,27 +11,24 @@
 @php
     $demoHouseholds = $demoHouseholds ?? [];
     $demoTotal = $demoTotal ?? count($demoHouseholds);
+    $profilingSummary = $profilingSummary ?? [
+        'households' => 0,
+        'respondents' => 0,
+        'male' => 0,
+        'female' => 0,
+    ];
 
     $demoZones = ['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4', 'Zone 5'];
     $demoStreets = ['Layuan St.', 'Dalipay St.', 'Cateel Bay St.'];
-
-    /*
-     | DEMO_SUMMARY — static preview totals for Barangay La Medalla.
-     | Not computed from filtered rows. Not persisted.
-     */
-    $demoSummary = [
-        'households' => 60,
-        'respondents' => 221,
-        'male' => 108,
-        'female' => 113,
-    ];
+    $hasDemoFallback = collect($demoHouseholds)->contains(
+        static fn (array $row): bool => ($row['source'] ?? 'demo') === 'demo'
+    );
 @endphp
 
 @section('content')
     <div
         class="lml-hh-profiling"
         data-lml-hh-profiling
-        data-demo="true"
         data-total="{{ $demoTotal }}"
     >
         <div class="lml-hh-profiling__header">
@@ -47,12 +45,12 @@
         <div
             class="lml-hh-profiling__stats"
             role="group"
-            aria-label="Household profiling summary (demo values)"
+            aria-label="Registered household profiling summary"
         >
             <article class="lml-hh-profiling__card">
                 <div class="lml-hh-profiling__card-body">
                     <p class="lml-hh-profiling__card-label">Total Households</p>
-                    <p class="lml-hh-profiling__card-value" data-stat="households">{{ $demoSummary['households'] }}</p>
+                    <p class="lml-hh-profiling__card-value" data-stat="households">{{ $profilingSummary['households'] }}</p>
                 </div>
                 <span class="lml-hh-profiling__card-icon" aria-hidden="true">
                     <i class="bi bi-house-door-fill"></i>
@@ -61,7 +59,7 @@
             <article class="lml-hh-profiling__card">
                 <div class="lml-hh-profiling__card-body">
                     <p class="lml-hh-profiling__card-label">Total Respondents</p>
-                    <p class="lml-hh-profiling__card-value" data-stat="respondents">{{ $demoSummary['respondents'] }}</p>
+                    <p class="lml-hh-profiling__card-value" data-stat="respondents">{{ $profilingSummary['respondents'] }}</p>
                 </div>
                 <span class="lml-hh-profiling__card-icon" aria-hidden="true">
                     <i class="bi bi-people-fill"></i>
@@ -70,7 +68,7 @@
             <article class="lml-hh-profiling__card">
                 <div class="lml-hh-profiling__card-body">
                     <p class="lml-hh-profiling__card-label">Male</p>
-                    <p class="lml-hh-profiling__card-value" data-stat="male">{{ $demoSummary['male'] }}</p>
+                    <p class="lml-hh-profiling__card-value" data-stat="male">{{ $profilingSummary['male'] }}</p>
                 </div>
                 <span class="lml-hh-profiling__card-icon" aria-hidden="true">
                     <i class="bi bi-gender-male"></i>
@@ -79,7 +77,7 @@
             <article class="lml-hh-profiling__card">
                 <div class="lml-hh-profiling__card-body">
                     <p class="lml-hh-profiling__card-label">Female</p>
-                    <p class="lml-hh-profiling__card-value" data-stat="female">{{ $demoSummary['female'] }}</p>
+                    <p class="lml-hh-profiling__card-value" data-stat="female">{{ $profilingSummary['female'] }}</p>
                 </div>
                 <span class="lml-hh-profiling__card-icon" aria-hidden="true">
                     <i class="bi bi-gender-female"></i>
@@ -148,7 +146,7 @@
             <div class="lml-hh-profiling__table-scroll" tabindex="0" role="region" aria-label="Household records table">
                 <table class="lml-hh-profiling__table">
                     <caption class="visually-hidden">
-                        Demo household records for Barangay La Medalla. Nothing is saved.
+                        Household records for Barangay La Medalla. Database households are editable; demo catalog rows are read-only fallbacks.
                     </caption>
                     <thead>
                         <tr>
@@ -162,6 +160,10 @@
                     </thead>
                     <tbody data-hh-tbody>
                         @foreach ($demoHouseholds as $household)
+                            @php
+                                $rowSource = $household['source'] ?? 'demo';
+                                $isDbRow = $rowSource === 'db';
+                            @endphp
                             <tr
                                 data-hh-row
                                 data-id="{{ $household['id'] }}"
@@ -170,6 +172,7 @@
                                 data-zone="{{ $household['zone'] }}"
                                 data-street="{{ $household['street'] }}"
                                 data-members="{{ $household['members'] }}"
+                                data-source="{{ $rowSource }}"
                             >
                                 <td data-label="HH No.">
                                     <span class="lml-hh-profiling__hh-no">{{ $household['householdNo'] }}</span>
@@ -188,16 +191,27 @@
                                             <i class="bi bi-eye-fill" aria-hidden="true"></i>
                                             <span>View</span>
                                         </a>
-                                        <button
-                                            type="button"
-                                            class="lml-hh-profiling__action-btn lml-hh-profiling__action-btn--add lml-focus-ring"
-                                            data-hh-action="add"
-                                            data-household-no="{{ $household['householdNo'] }}"
-                                            aria-label="Add member to {{ $household['householdNo'] }}"
-                                        >
-                                            <i class="bi bi-plus-lg" aria-hidden="true"></i>
-                                            <span>Add</span>
-                                        </button>
+                                        @if ($isDbRow)
+                                            <a
+                                                href="{{ route('household-profiling.members.create', ['householdNo' => $household['householdNo']]) }}"
+                                                class="lml-hh-profiling__action-btn lml-hh-profiling__action-btn--add lml-focus-ring"
+                                                aria-label="Add member to {{ $household['householdNo'] }}"
+                                            >
+                                                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                                <span>Add</span>
+                                            </a>
+                                        @else
+                                            <button
+                                                type="button"
+                                                class="lml-hh-profiling__action-btn lml-hh-profiling__action-btn--add lml-focus-ring"
+                                                data-hh-action="add"
+                                                data-household-no="{{ $household['householdNo'] }}"
+                                                aria-label="Add member to {{ $household['householdNo'] }}"
+                                            >
+                                                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                                <span>Add</span>
+                                            </button>
+                                        @endif
                                         <button
                                             type="button"
                                             class="lml-hh-profiling__action-btn lml-hh-profiling__action-btn--delete lml-focus-ring"
@@ -226,7 +240,10 @@
         </div>
 
         <p class="lml-hh-profiling__demo-note">
-            Demo preview for Barangay La Medalla. Records are placeholders and are not saved.
+            Summary cards count registered database households and residents.
+            @if ($hasDemoFallback)
+                Demo catalog rows may appear for compatibility and are read-only until persisted separately.
+            @endif
         </p>
 
         <div

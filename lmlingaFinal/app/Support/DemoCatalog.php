@@ -87,6 +87,23 @@ final class DemoCatalog
     }
 
     /**
+     * Ensure demo household helpers exist without requiring a DemoCatalog read.
+     *
+     * Helpers (lml_demo_member_display / lml_demo_find_member) are defined in
+     * resources/demo/households.php. DB-first household views never load that
+     * catalog, so member-view and other blades would fatally call an undefined
+     * function unless helpers are ensured here first.
+     */
+    public static function ensureHouseholdHelpers(): void
+    {
+        if (function_exists('lml_demo_member_display') && function_exists('lml_demo_find_member')) {
+            return;
+        }
+
+        require resource_path('demo/households.php');
+    }
+
+    /**
      * @return array<string, array<string, mixed>>
      */
     public static function households(): array

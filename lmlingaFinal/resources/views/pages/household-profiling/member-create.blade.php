@@ -1,6 +1,6 @@
 {{--
-    Household Profiling — Add New Member (UI preview).
-    Demo form only. No persistence. Belongs to route householdNo.
+    Household Profiling — Add New Member (DB-05 Phase 4).
+    Persistable only when the route household exists in the database.
 --}}
 @extends('layouts.dashboard')
 
@@ -10,13 +10,16 @@
     @php
         $formMode = $formMode ?? 'create';
         $memberValues = $memberValues ?? [];
+        $persistable = $persistable ?? false;
+        $householdSource = $householdSource ?? null;
     @endphp
 
     <div
         class="lml-hh-member-form"
         data-lml-hh-member-form
         data-mode="create"
-        data-demo="true"
+        data-source="{{ $householdSource ?? 'none' }}"
+        data-persistable="{{ $persistable ? '1' : '0' }}"
         data-household-no="{{ $householdNo }}"
         data-view-url="{{ route('household-profiling.view', ['householdNo' => $householdNo]) }}"
     >
@@ -38,11 +41,27 @@
                     Household not found
                 </h2>
                 <p class="lml-hh-member-form__not-found-message">
-                    No demo household matches <strong>{{ $householdNo }}</strong>.
-                    Nothing was loaded from a database.
+                    No registered or demo household matches <strong>{{ $householdNo }}</strong>.
                 </p>
                 <a href="{{ route('household-profiling.index') }}" class="lml-hh-member-form__not-found-link lml-focus-ring">
                     Return to Household List
+                </a>
+            </section>
+        @elseif (! $persistable)
+            <section class="lml-hh-member-form__not-found" aria-labelledby="lml-hh-member-preview-title">
+                <span class="lml-hh-member-form__not-found-icon" aria-hidden="true">
+                    <i class="bi bi-house-lock"></i>
+                </span>
+                <h2 id="lml-hh-member-preview-title" class="lml-hh-member-form__not-found-title">
+                    Demo preview only
+                </h2>
+                <p class="lml-hh-member-form__not-found-message">
+                    Household <strong>{{ $householdNo }}</strong> exists only in the demo catalog.
+                    Members cannot be saved until this household is registered in the database.
+                    Nothing is saved.
+                </p>
+                <a href="{{ route('household-profiling.view', ['householdNo' => $householdNo]) }}" class="lml-hh-member-form__not-found-link lml-focus-ring">
+                    Back to Household
                 </a>
             </section>
         @else

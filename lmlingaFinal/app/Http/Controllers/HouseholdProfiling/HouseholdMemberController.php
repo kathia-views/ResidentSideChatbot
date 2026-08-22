@@ -22,24 +22,38 @@ class HouseholdMemberController extends Controller
     public function create(string $householdNo): View
     {
         $key = DemoCatalog::normalizeHouseholdNo($householdNo);
+        $resolved = $this->resolver->resolveHousehold($key);
 
-        try {
-            $household = $this->resolver->resolveDbHouseholdOrFail($key);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+        if ($resolved === null) {
             return view('pages.household-profiling.member-create', [
                 'active' => 'household-profiling',
                 'pageTitle' => 'Household Profiling',
                 'pageSubtitle' => 'Household was not found.',
                 'householdNo' => $key,
                 'demoHousehold' => null,
+                'householdSource' => null,
+                'persistable' => false,
                 'formMode' => 'create',
                 'memberValues' => [],
             ]);
         }
 
-        $presentation = HouseholdProfilingPresenter::fromModel(
-            $household->load('residents')
-        );
+        if ($resolved['source'] === 'demo') {
+            return view('pages.household-profiling.member-create', [
+                'active' => 'household-profiling',
+                'pageTitle' => 'Household Profiling',
+                'pageSubtitle' => 'Demo preview only — members cannot be saved for '.$key.'.',
+                'householdNo' => $key,
+                'demoHousehold' => $resolved['presentation'],
+                'householdSource' => 'demo',
+                'persistable' => false,
+                'formMode' => 'create',
+                'memberValues' => [],
+            ]);
+        }
+
+        $household = $resolved['household']->load('residents');
+        $presentation = HouseholdProfilingPresenter::fromModel($household);
 
         return view('pages.household-profiling.member-create', [
             'active' => 'household-profiling',
@@ -47,6 +61,8 @@ class HouseholdMemberController extends Controller
             'pageSubtitle' => 'Add a new member to '.$key.'.',
             'householdNo' => $key,
             'demoHousehold' => $presentation,
+            'householdSource' => 'db',
+            'persistable' => true,
             'formMode' => 'create',
             'memberValues' => [],
         ]);
@@ -64,7 +80,7 @@ class HouseholdMemberController extends Controller
                 'householdNo' => $key,
                 'memberId' => $resident->member_no,
             ])
-            ->with('status', 'Household member was saved successfully.');
+            ->with('status', 'Household member added successfully.');
     }
 
     public function show(string $householdNo, string $memberId): View
@@ -83,6 +99,7 @@ class HouseholdMemberController extends Controller
             'memberId' => $memberKey,
             'demoHousehold' => $resolved['householdPresentation'] ?? null,
             'demoMember' => $resolved['memberPresentation'] ?? null,
+            'householdSource' => $resolved['source'] ?? null,
         ]);
     }
 
@@ -102,6 +119,8 @@ class HouseholdMemberController extends Controller
                 'memberId' => $memberKey,
                 'demoHousehold' => null,
                 'demoMember' => null,
+                'householdSource' => null,
+                'persistable' => false,
                 'formMode' => 'edit',
                 'memberValues' => [],
             ]);
@@ -119,6 +138,8 @@ class HouseholdMemberController extends Controller
             'memberId' => $memberKey,
             'demoHousehold' => HouseholdProfilingPresenter::fromModel($household),
             'demoMember' => $memberPresentation,
+            'householdSource' => 'db',
+            'persistable' => true,
             'formMode' => 'edit',
             'memberValues' => $memberPresentation,
         ]);
@@ -140,6 +161,6 @@ class HouseholdMemberController extends Controller
                 'householdNo' => $key,
                 'memberId' => $memberKey,
             ])
-            ->with('status', 'Household member was updated successfully.');
+            ->with('status', 'Household member updated successfully.');
     }
 }

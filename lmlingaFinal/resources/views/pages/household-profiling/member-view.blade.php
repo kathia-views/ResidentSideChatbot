@@ -1,6 +1,6 @@
 {{--
-    Household Profiling — View Member Information (UI preview).
-    Demo data only. No persistence.
+    Household Profiling — View Member Information (DB-05 Phase 4).
+    DB-first via HouseholdMemberResolver; DemoCatalog fallback for reads only.
 --}}
 @extends('layouts.dashboard')
 
@@ -8,6 +8,8 @@
 
 @section('content')
     @php
+        $householdSource = $householdSource ?? null;
+        $isDbMember = $householdSource === 'db';
         $riskAssessmentUrl = ($demoHousehold && $demoMember)
             ? route('household-profiling.members.risk-assessment', [
                 'householdNo' => $demoHousehold['householdNo'],
@@ -90,7 +92,7 @@
     <div
         class="lml-hh-member-view"
         data-lml-hh-member-view
-        data-demo="true"
+        data-source="{{ $householdSource ?? 'none' }}"
         @if ($demoHousehold && $demoMember)
             data-household-no="{{ $demoHousehold['householdNo'] }}"
             data-member-id="{{ $demoMember['id'] }}"
@@ -154,14 +156,16 @@
                 </div>
 
                 <div class="lml-hh-member-view__header-actions">
-                    <button
-                        type="button"
-                        class="lml-hh-member-view__btn lml-hh-member-view__btn--delete lml-focus-ring"
-                        data-hh-member-view-delete
-                        aria-label="Delete {{ $demoMember['name'] }}"
-                    >
-                        Delete
-                    </button>
+                    @unless ($isDbMember)
+                        <button
+                            type="button"
+                            class="lml-hh-member-view__btn lml-hh-member-view__btn--delete lml-focus-ring"
+                            data-hh-member-view-delete
+                            aria-label="Delete {{ $demoMember['name'] }}"
+                        >
+                            Delete
+                        </button>
+                    @endunless
                     <a
                         href="{{ route('household-profiling.members.edit', [
                             'householdNo' => $demoHousehold['householdNo'],
@@ -413,47 +417,54 @@
             </div>
 
             <p class="lml-hh-member-view__demo-note">
-                Demo preview for {{ $demoMember['id'] }} in household {{ $demoHousehold['householdNo'] }}.
-                Records are placeholders and are not saved.
+                @if ($isDbMember)
+                    Registered member {{ $demoMember['id'] }} in household {{ $demoHousehold['householdNo'] }}.
+                    Linked health-record sections on this page may still use preview placeholders.
+                @else
+                    Demo preview for {{ $demoMember['id'] }} in household {{ $demoHousehold['householdNo'] }}.
+                    Records are placeholders and are not saved.
+                @endif
             </p>
 
-            <div class="lml-hh-member-view__dialog-backdrop" data-hh-member-view-dialog hidden>
-                <div
-                    class="lml-hh-member-view__dialog"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="lml-hh-member-view-delete-title"
-                    aria-describedby="lml-hh-member-view-delete-message"
-                    tabindex="-1"
-                    data-hh-member-view-dialog-panel
-                >
-                    <h2 id="lml-hh-member-view-delete-title" class="lml-hh-member-view__dialog-title">
-                        Delete member?
-                    </h2>
-                    <p id="lml-hh-member-view-delete-message" class="lml-hh-member-view__dialog-message">
-                        Are you sure you want to delete
-                        <strong data-hh-member-view-delete-name>{{ $demoMember['name'] }}</strong>
-                        from household
-                        <strong>{{ $demoHousehold['householdNo'] }}</strong>?
-                    </p>
-                    <div class="lml-hh-member-view__dialog-actions">
-                        <button
-                            type="button"
-                            class="lml-hh-member-view__dialog-btn lml-hh-member-view__dialog-btn--cancel lml-focus-ring"
-                            data-hh-member-view-dialog-cancel
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            class="lml-hh-member-view__dialog-btn lml-hh-member-view__dialog-btn--confirm lml-focus-ring"
-                            data-hh-member-view-dialog-confirm
-                        >
-                            Delete
-                        </button>
+            @unless ($isDbMember)
+                <div class="lml-hh-member-view__dialog-backdrop" data-hh-member-view-dialog hidden>
+                    <div
+                        class="lml-hh-member-view__dialog"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="lml-hh-member-view-delete-title"
+                        aria-describedby="lml-hh-member-view-delete-message"
+                        tabindex="-1"
+                        data-hh-member-view-dialog-panel
+                    >
+                        <h2 id="lml-hh-member-view-delete-title" class="lml-hh-member-view__dialog-title">
+                            Delete member?
+                        </h2>
+                        <p id="lml-hh-member-view-delete-message" class="lml-hh-member-view__dialog-message">
+                            Are you sure you want to delete
+                            <strong data-hh-member-view-delete-name>{{ $demoMember['name'] }}</strong>
+                            from household
+                            <strong>{{ $demoHousehold['householdNo'] }}</strong>?
+                        </p>
+                        <div class="lml-hh-member-view__dialog-actions">
+                            <button
+                                type="button"
+                                class="lml-hh-member-view__dialog-btn lml-hh-member-view__dialog-btn--cancel lml-focus-ring"
+                                data-hh-member-view-dialog-cancel
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                class="lml-hh-member-view__dialog-btn lml-hh-member-view__dialog-btn--confirm lml-focus-ring"
+                                data-hh-member-view-dialog-confirm
+                            >
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            @endunless
         @endif
     </div>
 @endsection

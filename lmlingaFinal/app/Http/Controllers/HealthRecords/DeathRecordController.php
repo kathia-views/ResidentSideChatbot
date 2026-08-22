@@ -7,7 +7,7 @@ use App\Http\Requests\StoreDeathRecordRequest;
 use App\Models\DeathRequest;
 use App\Support\DeathCertificateStorage;
 use App\Support\DeathRecordService;
-use App\Support\DemoDeath;
+use App\Support\HealthMemberIdentity;
 use App\Support\ResidentVitalStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -15,9 +15,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DeathRecordController extends Controller
 {
+    public function __construct(
+        private readonly HealthMemberIdentity $identity,
+    ) {}
+
     public function show(string $householdNo, string $memberId): View
     {
-        $ctx = DemoDeath::resolveMember($householdNo, $memberId);
+        $ctx = $this->identity->resolve($householdNo, $memberId);
         $latest = $ctx['member']
             ? DeathRequest::latestForMember($ctx['householdNo'], $ctx['memberId'])
             : null;
@@ -31,10 +35,7 @@ class DeathRecordController extends Controller
         string $memberId,
         DeathRecordService $service
     ): RedirectResponse {
-        $ctx = DemoDeath::resolveMember($householdNo, $memberId);
-        if (! $ctx['household'] || ! $ctx['member']) {
-            abort(404, 'Resident was not found.');
-        }
+        $ctx = $this->identity->resolvePersistedOrFail($householdNo, $memberId);
 
         $validated = $request->validated();
         $file = $request->file('death_certificate');
@@ -47,7 +48,7 @@ class DeathRecordController extends Controller
                 ->withErrors(['death_certificate' => 'Death certificate file is required.']);
         }
 
-        $service->submit($ctx['household'], $ctx['member'], $validated, $file);
+        $service->submit($ctx['household'], $ctx['member'], $validated, $file, $ctx['resident']);
 
         return redirect()
             ->route('health-records.death.show', [
@@ -59,7 +60,7 @@ class DeathRecordController extends Controller
 
     public function certificate(string $householdNo, string $memberId): StreamedResponse
     {
-        $ctx = DemoDeath::resolveMember($householdNo, $memberId);
+        $ctx = $this->identity->resolve($householdNo, $memberId);
         if (! $ctx['member']) {
             abort(404, 'Resident was not found.');
         }
@@ -73,7 +74,12 @@ class DeathRecordController extends Controller
     }
 
     /**
-     * @param  array{household: array<string, mixed>|null, member: array<string, mixed>|null, householdNo: string, memberId: string}  $ctx
+     * @param  array{
+     *     household: array<string, mixed>|null,
+     *     member: array<string, mixed>|null,
+     *     householdNo: string,
+     *     memberId: string
+     * }  $ctx
      */
     private function page(array $ctx, ?DeathRequest $latest): View
     {

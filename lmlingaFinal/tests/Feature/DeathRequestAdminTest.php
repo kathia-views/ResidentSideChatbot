@@ -255,6 +255,26 @@ class DeathRequestAdminTest extends TestCase
 
     private function submitPending(): void
     {
+        $household = \App\Models\Household::factory()->create([
+            'household_no' => 'HH-151',
+            'zone' => 'Zone 2',
+            'street' => 'Layuan St.',
+            'address' => 'Layuan St., Brgy. La Medalla',
+        ]);
+
+        \App\Models\Resident::factory()->create([
+            'household_id' => $household->id,
+            'member_no' => 'MB-002',
+            'last_name' => 'Reyes',
+            'first_name' => 'Kristine',
+            'middle_name' => null,
+            'relation' => 'Spouse',
+            'sex' => 'Female',
+            'birthday' => '1991-08-12',
+            'relationship_status' => 'Married',
+            'occupation' => 'Nurse',
+        ]);
+
         $this->withSession([UiRole::SESSION_KEY => 'bhw'])
             ->post(route('health-records.death.store', [
                 'householdNo' => 'HH-151',

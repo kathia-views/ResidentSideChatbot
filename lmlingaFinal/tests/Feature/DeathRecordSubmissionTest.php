@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\DeathRequest;
+use App\Models\Household;
+use App\Models\Resident;
 use App\Models\ResidentStatus;
 use App\Support\DeathCertificateStorage;
 use App\Support\DeathRequestRegistryBackfill;
@@ -56,6 +58,8 @@ class DeathRecordSubmissionTest extends TestCase
 
     public function test_server_rejects_incomplete_submissions(): void
     {
+        $this->seedPersistedKristine();
+
         $url = route('health-records.death.store', [
             'householdNo' => 'HH-151',
             'memberId' => 'MB-002',
@@ -82,6 +86,7 @@ class DeathRecordSubmissionTest extends TestCase
 
     public function test_successful_submission_creates_pending_request_without_marking_deceased(): void
     {
+        $seed = $this->seedPersistedKristine();
         $file = UploadedFile::fake()->create('certificate_rosario_cruz.pdf', 120, 'application/pdf');
 
         $this->withSession([UiRole::SESSION_KEY => 'bhw'])
@@ -107,6 +112,7 @@ class DeathRecordSubmissionTest extends TestCase
         // Legacy column mirrors registry_no (single identifying number).
         $this->assertSame('2026-00123', $request->certificate_no);
         $this->assertSame('bhw', $request->submitted_by_role);
+        $this->assertSame($seed['resident']->id, $request->resident_id);
         $this->assertFalse(ResidentVitalStatus::isDeceased('HH-151', 'MB-002'));
         $this->assertNull(ResidentStatus::forMember('HH-151', 'MB-002'));
         $this->assertSame(0, ResidentStatus::query()->count());
@@ -130,6 +136,8 @@ class DeathRecordSubmissionTest extends TestCase
 
     public function test_duplicate_pending_request_is_rejected(): void
     {
+        $this->seedPersistedKristine();
+
         $payload = [
             'cause_of_death' => 'Cardiac arrest',
             'date_of_death' => '2026-07-12',
@@ -192,6 +200,7 @@ class DeathRecordSubmissionTest extends TestCase
 
     public function test_registry_no_is_the_single_identifying_number(): void
     {
+        $this->seedPersistedKristine();
         $file = UploadedFile::fake()->create('certificate.pdf', 120, 'application/pdf');
 
         $this->withSession([UiRole::SESSION_KEY => 'bhw'])
@@ -363,8 +372,41 @@ class DeathRecordSubmissionTest extends TestCase
         $this->assertStringNotContainsString('name="certificate_no"', $recordHtml);
     }
 
+    /**
+     * @return array{household: Household, resident: Resident}
+     */
+    private function seedPersistedKristine(): array
+    {
+        $household = Household::factory()->create([
+            'household_no' => 'HH-151',
+            'zone' => 'Zone 2',
+            'street' => 'Layuan St.',
+            'address' => 'Layuan St., Brgy. La Medalla',
+        ]);
+
+        $resident = Resident::factory()->create([
+            'household_id' => $household->id,
+            'member_no' => 'MB-002',
+            'last_name' => 'Reyes',
+            'first_name' => 'Kristine',
+            'middle_name' => null,
+            'relation' => 'Spouse',
+            'sex' => 'Female',
+            'birthday' => '1991-08-12',
+            'relationship_status' => 'Married',
+            'occupation' => 'Nurse',
+        ]);
+
+        return [
+            'household' => $household,
+            'resident' => $resident,
+        ];
+    }
+
     private function submitPending(): void
     {
+        $this->seedPersistedKristine();
+
         $this->withSession([UiRole::SESSION_KEY => 'bhw'])
             ->post(route('health-records.death.store', [
                 'householdNo' => 'HH-151',

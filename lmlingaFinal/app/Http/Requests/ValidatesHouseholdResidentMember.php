@@ -179,7 +179,10 @@ trait ValidatesHouseholdResidentMember
         $this->request->remove('household_id');
         $this->request->remove('household_no');
         $this->request->remove('member_no');
+        $this->request->remove('resident_id');
         $this->request->remove('age');
+        $this->request->remove('householdHead');
+        $this->request->remove('is_household_head');
     }
 
     /**

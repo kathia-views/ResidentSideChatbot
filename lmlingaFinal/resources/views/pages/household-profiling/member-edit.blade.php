@@ -1,6 +1,6 @@
 {{--
-    Household Profiling — Edit Member (UI preview).
-    Demo form only. No persistence.
+    Household Profiling — Edit Member (DB-05 Phase 4).
+    Persistable only for database-backed residents.
 --}}
 @extends('layouts.dashboard')
 
@@ -16,7 +16,8 @@
         class="lml-hh-member-form"
         data-lml-hh-member-form
         data-mode="edit"
-        data-demo="true"
+        data-source="{{ $householdSource ?? 'none' }}"
+        data-persistable="{{ ($persistable ?? false) ? '1' : '0' }}"
         data-household-no="{{ $householdNo }}"
         data-member-id="{{ $memberId }}"
         data-view-url="{{ route('household-profiling.members.show', ['householdNo' => $householdNo, 'memberId' => $memberId]) }}"
@@ -39,7 +40,7 @@
                     Member not found
                 </h2>
                 <p class="lml-hh-member-form__not-found-message">
-                    The requested demo household or member could not be found. Nothing was loaded from a database.
+                    The requested household or member could not be found for editing.
                 </p>
                 <a
                     href="{{ $demoHousehold ? route('household-profiling.view', ['householdNo' => $householdNo]) : route('household-profiling.index') }}"

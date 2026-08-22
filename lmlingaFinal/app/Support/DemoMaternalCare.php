@@ -158,20 +158,20 @@ final class DemoMaternalCare
     }
 
     /**
+     * DB-first identity via HouseholdMemberResolver; DemoCatalog read fallback.
+     * Presentation shape preserved for frozen Maternal Care UI.
+     *
      * @return array{household: array<string, mixed>|null, member: array<string, mixed>|null, householdNo: string, memberId: string}
      */
     public static function resolveMember(string $householdNo, string $memberId): array
     {
-        $hh = DemoCatalog::normalizeHouseholdNo($householdNo);
-        $mb = DemoCatalog::normalizeMemberId($memberId);
-        $household = DemoCatalog::findHousehold($hh);
-        $member = $household ? lml_demo_find_member($household, $mb) : null;
+        $ctx = app(HealthMemberIdentity::class)->resolve($householdNo, $memberId);
 
         return [
-            'household' => $household,
-            'member' => $member,
-            'householdNo' => $hh,
-            'memberId' => $mb,
+            'household' => $ctx['household'],
+            'member' => $ctx['member'],
+            'householdNo' => $ctx['householdNo'],
+            'memberId' => $ctx['memberId'],
         ];
     }
 

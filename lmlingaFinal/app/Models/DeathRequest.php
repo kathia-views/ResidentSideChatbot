@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Support\DemoDeath;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DeathRequest extends Model
 {
@@ -24,6 +25,7 @@ class DeathRequest extends Model
     protected $fillable = [
         'household_no',
         'member_id',
+        'resident_id',
         'resident_name',
         'resident_sex',
         'resident_age',
@@ -61,7 +63,16 @@ class DeathRequest extends Model
             'reviewed_at' => 'datetime',
             'certificate_size' => 'integer',
             'resident_age' => 'integer',
+            'resident_id' => 'integer',
         ];
+    }
+
+    /**
+     * @return BelongsTo<Resident, $this>
+     */
+    public function resident(): BelongsTo
+    {
+        return $this->belongsTo(Resident::class);
     }
 
     public function isPending(): bool

@@ -14,6 +14,7 @@ class ResidentStatus extends Model
     protected $fillable = [
         'household_no',
         'member_id',
+        'resident_id',
         'status',
         'death_request_id',
         'recorded_at',
@@ -26,6 +27,7 @@ class ResidentStatus extends Model
     {
         return [
             'recorded_at' => 'datetime',
+            'resident_id' => 'integer',
         ];
     }
 
@@ -40,6 +42,14 @@ class ResidentStatus extends Model
     public function deathRequest(): BelongsTo
     {
         return $this->belongsTo(DeathRequest::class);
+    }
+
+    /**
+     * @return BelongsTo<Resident, $this>
+     */
+    public function resident(): BelongsTo
+    {
+        return $this->belongsTo(Resident::class);
     }
 
     public static function forMember(string $householdNo, string $memberId): ?self
