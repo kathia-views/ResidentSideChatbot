@@ -210,22 +210,20 @@ final class HealthRecordsDeworming
     /**
      * Whether Deworming records may be managed for this household member.
      *
-     * Deworming is available for ALL ages. This does NOT use
-     * {@see HealthRecordsChildCare::isChildCarePopulation()} / 0–59 months.
+     * Reuses the authoritative Child Care population rule (0–59 months inclusive).
      * Callers must resolve $member from the requested household first.
      *
      * @param  array<string, mixed>  $member  Member row already scoped to a household
      */
     public static function memberCanManageRecords(array $member): bool
     {
-        // Reject empty placeholders only. Age is never a gate for Deworming.
-        return $member !== [];
+        return HealthRecordsChildCare::isChildCarePopulation($member);
     }
 
     /**
      * Deworming history for a household member resolved by stable identifiers.
-     * Returns monitoring fixture rows only when the member belongs to the household
-     * and their display-name slug matches a monitoring key (no age filter).
+     * DB-backed residents read persisted rows; demo members fall back to UI-phase
+     * monitoring fixtures when eligible and the display-name slug matches.
      *
      * @return list<array<string, mixed>>
      */
@@ -235,6 +233,10 @@ final class HealthRecordsDeworming
         $member = $ctx['member'];
         if ($member === null || ! self::memberCanManageRecords($member)) {
             return [];
+        }
+
+        if ($ctx['source'] === 'db' && $ctx['resident'] !== null) {
+            return app(DewormingRecordService::class)->recordsForResident($ctx['resident']);
         }
 
         $childKey = self::slugifyName(HealthRecordsChildCare::displayName($member));

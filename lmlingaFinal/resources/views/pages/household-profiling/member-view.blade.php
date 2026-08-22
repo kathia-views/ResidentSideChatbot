@@ -59,8 +59,7 @@
         $pendingHealthModule = session('lml_pending_health_module');
 
         // Child Immunization / SBI / Nutrition keep their own destination eligibility.
-        // Deworming is available for every household member (all ages) — do not gate
-        // on HealthRecordsChildCare::isChildCarePopulation().
+        // Deworming reuses Child Care population (0–59 months).
         $childCareLinks = [
             [
                 'key' => 'child-immunization',
@@ -80,13 +79,16 @@
                 'icon' => 'bi-egg-fried',
                 'route' => 'household-profiling.members.child-nutrition',
             ],
-            [
+        ];
+
+        if ($demoMember && \App\Support\HealthRecordsChildCare::isChildCarePopulation($demoMember)) {
+            $childCareLinks[] = [
                 'key' => 'deworming',
                 'label' => 'Deworming',
                 'icon' => 'bi-capsule',
                 'route' => 'household-profiling.members.deworming',
-            ],
-        ];
+            ];
+        }
     @endphp
 
     <div

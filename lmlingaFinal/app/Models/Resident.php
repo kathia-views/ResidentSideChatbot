@@ -82,4 +82,12 @@ class Resident extends Model
     {
         return $this->hasOne(ChildBirthHistory::class);
     }
+
+    /**
+     * @return HasMany<DewormingRecord, $this>
+     */
+    public function dewormingRecords(): HasMany
+    {
+        return $this->hasMany(DewormingRecord::class);
+    }
 }

@@ -3,6 +3,7 @@
 use App\Support\DemoCatalog;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HouseholdProfiling\ChildBirthHistoryController;
+use App\Http\Controllers\HouseholdProfiling\DewormingRecordController;
 use App\Http\Controllers\HouseholdProfiling\DeathController;
 use App\Http\Controllers\HouseholdProfiling\HouseholdAmenitiesController;
 use App\Http\Controllers\HouseholdProfiling\HouseholdMemberController;
@@ -469,6 +470,7 @@ Route::middleware('ui.role')->group(function () {
         }
 
         $child = HealthRecordsDeworming::findChildForMember($key, $memberKey);
+        $persistenceSource = $ctx['source'] === 'db' ? 'db' : 'preview';
 
         return view('pages.health-records.child-care-deworming-create', [
             'active' => 'household-profiling',
@@ -480,11 +482,20 @@ Route::middleware('ui.role')->group(function () {
             'childKey' => $child !== null ? (string) $child['key'] : '',
             'roundOptions' => HealthRecordsDeworming::roundOptions(),
             'seStatusOptions' => HealthRecordsDeworming::seStatusOptions(),
+            'persistenceSource' => $persistenceSource,
         ]);
     })->where([
         'householdNo' => 'HH-[0-9]+',
         'memberId' => 'MB-[0-9]+',
     ])->name('household-profiling.members.deworming.create');
+
+    Route::post(
+        '/household-profiling/{householdNo}/members/{memberId}/deworming',
+        [DewormingRecordController::class, 'store']
+    )->where([
+        'householdNo' => 'HH-[0-9]+',
+        'memberId' => 'MB-[0-9]+',
+    ])->name('household-profiling.members.deworming.store');
 
     /*
      | Resident-specific Risk Assessment (Household Profiling member workflow).

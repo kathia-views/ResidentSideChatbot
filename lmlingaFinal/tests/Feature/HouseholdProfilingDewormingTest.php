@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Support\DemoCatalog;
 use App\Support\HealthRecordsChildCare;
 use App\Support\HealthRecordsDeworming;
 use App\Support\UiRole;
@@ -12,9 +11,6 @@ use Tests\TestCase;
 
 /**
  * Household Profiling → Member → Child Care → Deworming resident workflow.
- *
- * Deworming is available for ALL household members (all ages). Child Care
- * 0–59 month population rules still apply to other Child Care services only.
  */
 class HouseholdProfilingDewormingTest extends TestCase
 {
@@ -26,21 +22,25 @@ class HouseholdProfilingDewormingTest extends TestCase
 
     private const HOUSEHOLD_NO = 'HH-151';
 
-    /** Infant / Child Care population fixture (Kristine B. Reyes). */
-    private const INFANT_MEMBER_ID = 'MB-009';
+    private const ELIGIBLE_MEMBER_ID = 'MB-009';
 
-    /** Adult household head (Kristine Reyes) — previously “ineligible”. */
-    private const ADULT_MEMBER_ID = 'MB-001';
-
-    /** Older child (~5 yrs / past 59 months as of 2026) — Angelo David Reyes. */
-    private const OLDER_CHILD_MEMBER_ID = 'MB-003';
+    private const INELIGIBLE_MEMBER_ID = 'MB-001';
 
     /** @return array{householdNo: string, memberId: string} */
-    private function memberParams(string $memberId): array
+    private function eligibleMemberParams(): array
     {
         return [
             'householdNo' => self::HOUSEHOLD_NO,
-            'memberId' => $memberId,
+            'memberId' => self::ELIGIBLE_MEMBER_ID,
+        ];
+    }
+
+    /** @return array{householdNo: string, memberId: string} */
+    private function ineligibleMemberParams(): array
+    {
+        return [
+            'householdNo' => self::HOUSEHOLD_NO,
+            'memberId' => self::INELIGIBLE_MEMBER_ID,
         ];
     }
 
@@ -48,71 +48,72 @@ class HouseholdProfilingDewormingTest extends TestCase
     {
         $this->assertTrue(Route::has('household-profiling.members.deworming'));
         $this->assertTrue(Route::has('household-profiling.members.deworming.create'));
-
-        $params = $this->memberParams(self::INFANT_MEMBER_ID);
+        $this->assertTrue(Route::has('household-profiling.members.deworming.store'));
 
         $this->assertSame(
             url('/household-profiling/HH-151/members/MB-009/deworming'),
-            route('household-profiling.members.deworming', $params)
+            route('household-profiling.members.deworming', $this->eligibleMemberParams())
         );
         $this->assertSame(
             url('/household-profiling/HH-151/members/MB-009/deworming/create'),
-            route('household-profiling.members.deworming.create', $params)
+            route('household-profiling.members.deworming.create', $this->eligibleMemberParams())
         );
     }
 
-    public function test_deworming_is_available_for_all_ages_while_child_care_population_stays_0_to_59(): void
+    public function test_eligibility_rule_matches_child_care_population(): void
     {
         $this->assertSame(59, HealthRecordsChildCare::MAX_AGE_MONTHS);
 
+        $eligible = HealthRecordsDeworming::findChildForMember(
+            self::HOUSEHOLD_NO,
+            self::ELIGIBLE_MEMBER_ID
+        );
+        $ineligible = HealthRecordsDeworming::findChildForMember(
+            self::HOUSEHOLD_NO,
+            self::INELIGIBLE_MEMBER_ID
+        );
+
+        $this->assertNotNull($eligible);
+        $this->assertNotNull($ineligible);
+        $this->assertTrue(HealthRecordsDeworming::memberCanManageRecords(
+            lml_demo_find_member(
+                \App\Support\DemoCatalog::findHousehold(self::HOUSEHOLD_NO),
+                self::ELIGIBLE_MEMBER_ID
+            )
+        ));
+        $this->assertFalse(HealthRecordsDeworming::memberCanManageRecords(
+            lml_demo_find_member(
+                \App\Support\DemoCatalog::findHousehold(self::HOUSEHOLD_NO),
+                self::INELIGIBLE_MEMBER_ID
+            )
+        ));
+    }
+
+    public function test_exactly_59_months_is_eligible_and_60_months_is_ineligible(): void
+    {
         $now = Carbon::parse('2026-08-17')->startOfDay();
         Carbon::setTestNow($now);
 
-        $infant = ['birthday' => $now->copy()->subMonthsNoOverflow(6)->toDateString()];
-        $at59Months = ['birthday' => $now->copy()->subMonthsNoOverflow(59)->toDateString()];
-        $at60Months = ['birthday' => $now->copy()->subMonthsNoOverflow(60)->toDateString()];
-        $adolescent = ['birthday' => $now->copy()->subYearsNoOverflow(14)->toDateString()];
-        $adult = ['birthday' => $now->copy()->subYearsNoOverflow(35)->toDateString()];
-        $senior = ['birthday' => $now->copy()->subYearsNoOverflow(70)->toDateString()];
+        $at59Months = [
+            'birthday' => $now->copy()->subMonthsNoOverflow(59)->toDateString(),
+        ];
+        $at60Months = [
+            'birthday' => $now->copy()->subMonthsNoOverflow(60)->toDateString(),
+        ];
 
         $this->assertSame(59, HealthRecordsChildCare::ageInMonths($at59Months));
         $this->assertSame(60, HealthRecordsChildCare::ageInMonths($at60Months));
 
-        // Child Care population boundary remains authoritative for other services.
-        $this->assertTrue(HealthRecordsChildCare::isChildCarePopulation($infant));
         $this->assertTrue(HealthRecordsChildCare::isChildCarePopulation($at59Months));
         $this->assertFalse(HealthRecordsChildCare::isChildCarePopulation($at60Months));
-        $this->assertFalse(HealthRecordsChildCare::isChildCarePopulation($adolescent));
-        $this->assertFalse(HealthRecordsChildCare::isChildCarePopulation($adult));
-        $this->assertFalse(HealthRecordsChildCare::isChildCarePopulation($senior));
 
-        // Deworming: all ages.
-        foreach ([$infant, $at59Months, $at60Months, $adolescent, $adult, $senior] as $member) {
-            $this->assertTrue(
-                HealthRecordsDeworming::memberCanManageRecords($member),
-                'Deworming must allow all ages; failed for birthday '.$member['birthday']
-            );
-        }
-
-        $this->assertFalse(HealthRecordsDeworming::memberCanManageRecords([]));
+        $this->assertTrue(HealthRecordsDeworming::memberCanManageRecords($at59Months));
+        $this->assertFalse(HealthRecordsDeworming::memberCanManageRecords($at60Months));
     }
 
-    public function test_fixture_members_across_ages_can_manage_deworming(): void
+    public function test_individual_deworming_page_scopes_to_selected_eligible_member(): void
     {
-        $household = DemoCatalog::findHousehold(self::HOUSEHOLD_NO);
-        $this->assertNotNull($household);
-
-        foreach ([self::INFANT_MEMBER_ID, self::OLDER_CHILD_MEMBER_ID, self::ADULT_MEMBER_ID] as $memberId) {
-            $member = lml_demo_find_member($household, $memberId);
-            $this->assertNotNull($member, 'Missing fixture member '.$memberId);
-            $this->assertTrue(HealthRecordsDeworming::memberCanManageRecords($member));
-            $this->assertNotNull(HealthRecordsDeworming::findChildForMember(self::HOUSEHOLD_NO, $memberId));
-        }
-    }
-
-    public function test_individual_deworming_page_scopes_to_selected_infant_member(): void
-    {
-        $params = $this->memberParams(self::INFANT_MEMBER_ID);
+        $params = $this->eligibleMemberParams();
         $showUrl = route('household-profiling.members.deworming', $params);
         $createUrl = route('household-profiling.members.deworming.create', $params);
         $memberUrl = route('household-profiling.members.show', $params);
@@ -134,11 +135,10 @@ class HouseholdProfilingDewormingTest extends TestCase
         $this->assertSame('household-profiling', UiRole::sidebarActiveKey());
     }
 
-    public function test_adult_member_resolves_own_identity_and_can_add_record(): void
+    public function test_ineligible_member_resolves_own_identity_without_similar_name_fallback(): void
     {
-        $params = $this->memberParams(self::ADULT_MEMBER_ID);
+        $params = $this->ineligibleMemberParams();
         $showUrl = route('household-profiling.members.deworming', $params);
-        $createUrl = route('household-profiling.members.deworming.create', $params);
 
         $html = $this->get($showUrl)->assertOk()->getContent();
 
@@ -148,75 +148,100 @@ class HouseholdProfilingDewormingTest extends TestCase
         $this->assertStringContainsString('May 4, 1991', $html);
         $this->assertStringContainsString('College Graduate', $html);
         $this->assertStringNotContainsString('Kristine B. Reyes', $html);
-        $this->assertStringContainsString('data-hr-dw-add-record', $html);
-        $this->assertStringContainsString('href="'.e($createUrl).'"', $html);
+        $this->assertStringNotContainsString('data-hr-dw-add-record', $html);
+        $this->assertStringContainsString('No deworming records recorded for this child.', $html);
+        $this->assertStringNotContainsString('NHTS', $html);
+        $this->assertStringNotContainsString(
+            'href="'.e(route('household-profiling.members.deworming.create', $params)).'"',
+            $html
+        );
     }
 
     public function test_similar_names_do_not_cross_contaminate_deworming_history(): void
     {
-        $infantRecords = HealthRecordsDeworming::recordsForMember(
+        $eligibleRecords = HealthRecordsDeworming::recordsForMember(
             self::HOUSEHOLD_NO,
-            self::INFANT_MEMBER_ID
+            self::ELIGIBLE_MEMBER_ID
         );
-        $adultRecords = HealthRecordsDeworming::recordsForMember(
+        $ineligibleRecords = HealthRecordsDeworming::recordsForMember(
             self::HOUSEHOLD_NO,
-            self::ADULT_MEMBER_ID
+            self::INELIGIBLE_MEMBER_ID
         );
 
-        $this->assertNotSame([], $infantRecords);
-        $this->assertSame([], $adultRecords);
+        $this->assertNotSame([], $eligibleRecords);
+        $this->assertSame([], $ineligibleRecords);
 
-        $adultHtml = $this->get(route('household-profiling.members.deworming', $this->memberParams(self::ADULT_MEMBER_ID)))
+        $ineligibleHtml = $this->get(route('household-profiling.members.deworming', $this->ineligibleMemberParams()))
             ->assertOk()
             ->getContent();
 
-        $this->assertStringNotContainsString('January 20, 2026', $adultHtml);
-        $this->assertStringNotContainsString('July 1, 2026', $adultHtml);
+        $this->assertStringNotContainsString('January 20, 2026', $ineligibleHtml);
+        $this->assertStringNotContainsString('July 1, 2026', $ineligibleHtml);
     }
 
-    public function test_add_record_form_preserves_member_context_for_infant_and_adult(): void
+    public function test_add_record_form_preserves_member_context(): void
     {
-        foreach ([self::INFANT_MEMBER_ID, self::ADULT_MEMBER_ID] as $memberId) {
-            $params = $this->memberParams($memberId);
-            $showUrl = route('household-profiling.members.deworming', $params);
-            $createUrl = route('household-profiling.members.deworming.create', $params);
+        $params = $this->eligibleMemberParams();
+        $showUrl = route('household-profiling.members.deworming', $params);
+        $createUrl = route('household-profiling.members.deworming.create', $params);
 
-            $html = $this->get($createUrl)->assertOk()->getContent();
+        $html = $this->get($createUrl)->assertOk()->getContent();
 
-            $this->assertStringContainsString('data-lml-hr-dw-mode="create"', $html);
-            $this->assertStringContainsString('data-household-no="HH-151"', $html);
-            $this->assertStringContainsString('data-member-id="'.$memberId.'"', $html);
-            $this->assertStringContainsString('Add Deworming Record', $html);
-            $this->assertStringContainsString('href="'.e($showUrl).'"', $html);
-            $this->assertStringContainsString('data-hr-dw-return="'.e($showUrl).'"', $html);
-            $this->assertStringContainsString('data-hr-dw-cancel', $html);
-            $this->assertStringContainsString('data-hr-dw-save', $html);
-            $this->assertStringNotContainsString(
-                route('health-records.child-care.deworming.create', ['childKey' => 'kristine-b-reyes']),
-                $html
-            );
-        }
+        $this->assertStringContainsString('data-lml-hr-dw-mode="create"', $html);
+        $this->assertStringContainsString('data-household-no="HH-151"', $html);
+        $this->assertStringContainsString('data-member-id="MB-009"', $html);
+        $this->assertStringContainsString('Add Deworming Record', $html);
+        $this->assertStringContainsString('href="'.e($showUrl).'"', $html);
+        $this->assertStringContainsString('data-hr-dw-return="'.e($showUrl).'"', $html);
+        $this->assertStringContainsString('data-hr-dw-cancel', $html);
+        $this->assertStringContainsString('data-hr-dw-save', $html);
+        $this->assertStringNotContainsString(
+            route('health-records.child-care.deworming.create', ['childKey' => 'kristine-b-reyes']),
+            $html
+        );
     }
 
-    public function test_member_view_shows_deworming_link_for_infant_and_adult(): void
+    public function test_ineligible_create_route_redirects_to_member_deworming_show(): void
     {
-        foreach ([self::INFANT_MEMBER_ID, self::ADULT_MEMBER_ID, self::OLDER_CHILD_MEMBER_ID] as $memberId) {
-            $params = $this->memberParams($memberId);
-            $dewormingUrl = route('household-profiling.members.deworming', $params);
+        $params = $this->ineligibleMemberParams();
+        $showUrl = route('household-profiling.members.deworming', $params);
 
-            $html = $this->get(route('household-profiling.members.show', $params))
-                ->assertOk()
-                ->getContent();
+        $this->get(route('household-profiling.members.deworming.create', $params))
+            ->assertRedirect($showUrl);
+    }
 
-            $this->assertSame(1, substr_count($html, '>Deworming</'));
-            $this->assertStringContainsString('href="'.e($dewormingUrl).'"', $html);
-            $this->assertStringContainsString('bi-capsule', $html);
-        }
+    public function test_eligible_member_view_shows_deworming_link_once(): void
+    {
+        $params = $this->eligibleMemberParams();
+        $dewormingUrl = route('household-profiling.members.deworming', $params);
+
+        $html = $this->get(route('household-profiling.members.show', $params))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertSame(1, substr_count($html, 'Deworming'));
+        $this->assertStringContainsString('href="'.e($dewormingUrl).'"', $html);
+        $this->assertStringContainsString('bi-capsule', $html);
+    }
+
+    public function test_ineligible_member_view_hides_deworming_link(): void
+    {
+        $params = $this->ineligibleMemberParams();
+
+        $html = $this->get(route('household-profiling.members.show', $params))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringNotContainsString('bi-capsule', $html);
+        $this->assertStringNotContainsString(
+            'href="'.e(route('household-profiling.members.deworming', $params)).'"',
+            $html
+        );
     }
 
     public function test_other_child_care_links_remain_intact_on_member_page(): void
     {
-        $params = $this->memberParams(self::INFANT_MEMBER_ID);
+        $params = $this->eligibleMemberParams();
 
         $html = $this->get(route('household-profiling.members.show', $params))
             ->assertOk()
@@ -256,10 +281,9 @@ class HouseholdProfilingDewormingTest extends TestCase
 
     public function test_cross_household_member_does_not_resolve(): void
     {
-        // MB-001 exists on HH-151 only; requesting it under another household must not load that person.
         $params = [
             'householdNo' => 'HH-152',
-            'memberId' => self::ADULT_MEMBER_ID,
+            'memberId' => self::INELIGIBLE_MEMBER_ID,
         ];
 
         $html = $this->get(route('household-profiling.members.deworming', $params))
@@ -270,8 +294,8 @@ class HouseholdProfilingDewormingTest extends TestCase
         $this->assertStringContainsString('Demo member was not found.', $html);
         $this->assertStringNotContainsString('May 4, 1991', $html);
 
-        $this->assertNull(HealthRecordsDeworming::findChildForMember('HH-152', self::ADULT_MEMBER_ID));
-        $this->assertSame([], HealthRecordsDeworming::recordsForMember('HH-152', self::ADULT_MEMBER_ID));
+        $this->assertNull(HealthRecordsDeworming::findChildForMember('HH-152', self::INELIGIBLE_MEMBER_ID));
+        $this->assertSame([], HealthRecordsDeworming::recordsForMember('HH-152', self::INELIGIBLE_MEMBER_ID));
     }
 
     public function test_health_records_deworming_monitoring_unchanged_no_add_on_summary(): void

@@ -30,64 +30,76 @@ class HouseholdProfilingHouseholdMemberViewTest extends TestCase
         $this->assertSame(1, substr_count($response->getContent(), 'id="lml-hh-mv-child-care-toggle"'));
     }
 
-    public function test_child_care_panel_contains_four_module_links_including_deworming_for_all_ages(): void
+    public function test_child_care_panel_shows_deworming_only_for_eligible_members(): void
     {
-        $response = $this->get(route('household-profiling.members.show', [
+        $eligibleHtml = $this->get(route('household-profiling.members.show', [
+            'householdNo' => 'HH-151',
+            'memberId' => 'MB-009',
+        ]))->assertOk()->getContent();
+
+        $this->assertSame(1, substr_count($eligibleHtml, 'Child Immunization'));
+        $this->assertSame(1, substr_count($eligibleHtml, 'School-Based Immunization'));
+        $this->assertSame(1, substr_count($eligibleHtml, 'Child Nutrition'));
+        $this->assertSame(1, substr_count($eligibleHtml, '>Deworming</'));
+        $this->assertSame(1, substr_count($eligibleHtml, 'bi-capsule'));
+        $this->assertStringContainsString(
+            'href="'.e(route('household-profiling.members.deworming', [
+                'householdNo' => 'HH-151',
+                'memberId' => 'MB-009',
+            ])).'"',
+            $eligibleHtml
+        );
+
+        $ineligibleHtml = $this->get(route('household-profiling.members.show', [
             'householdNo' => 'HH-151',
             'memberId' => 'MB-001',
-        ]));
+        ]))->assertOk()->getContent();
 
-        $response->assertOk();
-        $html = $response->getContent();
-
-        $this->assertSame(1, substr_count($html, 'Child Immunization'));
-        $this->assertSame(1, substr_count($html, 'School-Based Immunization'));
-        $this->assertSame(1, substr_count($html, 'Child Nutrition'));
-        $this->assertSame(1, substr_count($html, '>Deworming</'));
-        $this->assertSame(1, substr_count($html, 'bi-capsule'));
-        $this->assertStringContainsString(
+        $this->assertSame(1, substr_count($ineligibleHtml, 'Child Immunization'));
+        $this->assertSame(1, substr_count($ineligibleHtml, 'School-Based Immunization'));
+        $this->assertSame(1, substr_count($ineligibleHtml, 'Child Nutrition'));
+        $this->assertSame(0, substr_count($ineligibleHtml, '>Deworming</'));
+        $this->assertSame(0, substr_count($ineligibleHtml, 'bi-capsule'));
+        $this->assertStringNotContainsString(
             'href="'.e(route('household-profiling.members.deworming', [
                 'householdNo' => 'HH-151',
                 'memberId' => 'MB-001',
             ])).'"',
-            $html
+            $ineligibleHtml
         );
         // Accordion toggle label (sidebar also lists Child Care under Health Records).
-        $this->assertSame(1, substr_count($html, 'id="lml-hh-mv-child-care-toggle"'));
+        $this->assertSame(1, substr_count($ineligibleHtml, 'id="lml-hh-mv-child-care-toggle"'));
         $this->assertMatchesRegularExpression(
             '/id="lml-hh-mv-child-care-toggle"[\s\S]*?>Child Care<\/span>/u',
-            $html
+            $ineligibleHtml
         );
     }
 
     public function test_child_care_links_use_named_routes(): void
     {
-        $response = $this->get(route('household-profiling.members.show', [
+        $eligibleParams = [
             'householdNo' => 'HH-151',
-            'memberId' => 'MB-001',
-        ]));
+            'memberId' => 'MB-009',
+        ];
+
+        $response = $this->get(route('household-profiling.members.show', $eligibleParams));
 
         $response->assertOk();
 
-        $params = [
-            'householdNo' => 'HH-151',
-            'memberId' => 'MB-001',
-        ];
-
         $response->assertSee(
-            'href="'.e(route('household-profiling.members.child-immunization', $params)).'"',
+            'href="'.e(route('household-profiling.members.child-immunization', $eligibleParams)).'"',
             false
         );
         $response->assertSee(
-            'href="'.e(route('household-profiling.members.school-based-immunization', $params)).'"',
+            'href="'.e(route('household-profiling.members.school-based-immunization', $eligibleParams)).'"',
             false
         );
         $response->assertSee(
-            'href="'.e(route('household-profiling.members.child-nutrition', $params)).'"',
+            'href="'.e(route('household-profiling.members.child-nutrition', $eligibleParams)).'"',
             false
         );
         $response->assertSee(
-            'href="'.e(route('household-profiling.members.deworming', $params)).'"',
+            'href="'.e(route('household-profiling.members.deworming', $eligibleParams)).'"',
             false
         );
     }

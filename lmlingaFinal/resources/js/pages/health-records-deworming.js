@@ -102,6 +102,11 @@ function initDewormingRecordForm(root) {
         return;
     }
 
+    const persistence = form.getAttribute('data-persistence') || 'preview';
+    if (persistence === 'db') {
+        return;
+    }
+
     form.addEventListener('submit', (event) => {
         event.preventDefault();
         const message =

@@ -1,6 +1,6 @@
 {{--
-    Health Records → Child Care → Deworming → Add Record (UI-phase).
-    GET form only — Save uses preview toast until a persistence route is approved.
+    Health Records → Child Care → Deworming → Add Record.
+    Demo/unresolved members remain preview-safe; DB-backed residents POST to store.
 --}}
 @extends('layouts.dashboard')
 
@@ -12,6 +12,14 @@
         $showUrl = isset($child['view_url']) ? $child['view_url'] : $summaryUrl;
         $roundOptions = $roundOptions ?? [];
         $seStatusOptions = $seStatusOptions ?? [];
+        $persistenceSource = $persistenceSource ?? 'preview';
+        $isDbPersisted = $persistenceSource === 'db';
+        $storeUrl = $isDbPersisted && isset($householdNo, $memberId)
+            ? route('household-profiling.members.deworming.store', [
+                'householdNo' => $householdNo,
+                'memberId' => $memberId,
+            ])
+            : null;
     @endphp
 
     <div
@@ -47,12 +55,14 @@
                 <form
                     class="lml-hr-cc-nr__form"
                     data-hr-dw-deworming-form
-                    action="#"
+                    action="{{ $storeUrl ?? '#' }}"
                     method="post"
                     novalidate
                     data-hr-dw-return="{{ $showUrl }}"
-                    data-hr-dw-preview-save="Deworming record preview saved for this UI phase. Persistence is not yet implemented."
-                    data-persistence="preview"
+                    @unless ($isDbPersisted)
+                        data-hr-dw-preview-save="Deworming record preview saved for this UI phase. Persistence is not yet implemented."
+                    @endunless
+                    data-persistence="{{ $persistenceSource }}"
                 >
                     @csrf
 
