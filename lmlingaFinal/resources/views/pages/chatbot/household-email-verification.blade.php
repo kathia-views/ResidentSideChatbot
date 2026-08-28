@@ -4,20 +4,28 @@
 
 @section('body')
     @php
-        /*
-         * UI-only demo masked email for the verification preview.
-         * Replace with the resident's submitted email when backend is wired.
-         */
-        $maskedEmail = 'jo******@gmail.com';
+        $maskedEmail = $maskedEmail ?? '***@***';
+        $otpVerifyError = trim((string) ($otpVerifyError ?? ''));
+        $otpEmailError = trim((string) ($otpEmailError ?? ''));
+        $otpSeconds = (int) ($otpSeconds ?? 0);
+        if ($otpSeconds < 0) {
+            $otpSeconds = 0;
+        }
+        $otpLockSeconds = (int) ($otpLockSeconds ?? 0);
+        if ($otpLockSeconds < 0) {
+            $otpLockSeconds = 0;
+        }
+        $otpLocked = $otpLockSeconds > 0;
     @endphp
 
     <div
         class="lml-chatbot-sms-verify"
         data-lml-sms-verify
-        data-status-url="{{ route('chatbot.household.verification.status') }}"
         data-alternative-url="{{ route('chatbot.household.verification.sms') }}"
         data-resend-success-message="New verification email sent."
-        data-otp-seconds="179"
+        data-otp-seconds="{{ $otpSeconds }}"
+        data-otp-lock-seconds="{{ $otpLockSeconds }}"
+        @if ($otpLocked) data-otp-locked="true" @endif
     >
         <div class="lml-chatbot-sms-verify__inner">
             <header class="lml-chatbot-sms-verify__header">
@@ -42,6 +50,11 @@
                         <h1 id="email-verify-heading" class="lml-chatbot-sms-verify__title">
                             Email Verification
                         </h1>
+                        @if ($otpEmailError !== '')
+                            <p class="lml-chatbot-sms-verify__intro" role="alert">
+                                {{ $otpEmailError }}
+                            </p>
+                        @endif
                         <p class="lml-chatbot-sms-verify__intro">
                             We've sent a 6-digit code to your email address
                             <span class="lml-chatbot-sms-verify__masked">{{ $maskedEmail }}</span>.
@@ -52,18 +65,20 @@
                     </div>
 
                     {{--
-                        UI-phase form: method stays POST with CSRF for secure markup.
-                        Submission is intercepted by client-side validation until backend email verification is wired.
-                        Do not use method="get" (would expose the code in the URL).
+                        Original LMLinga Email Verification UI.
+                        Wired to secure Email OTP verify/send endpoints.
+                        Ownership and OTP validation are resolved server-side only.
                     --}}
                     <form
                         class="lml-chatbot-sms-verify__form"
-                        action="{{ route('chatbot.household.verification.email') }}"
+                        action="{{ route('chatbot.household.verification.email.verify') }}"
                         method="post"
                         novalidate
                         data-lml-sms-form
+                        data-lml-otp-server-submit="true"
                     >
                         @csrf
+                        <input type="hidden" name="otp" value="" data-lml-otp-value>
 
                         <fieldset class="lml-chatbot-sms-verify__otp-fieldset">
                             <legend class="visually-hidden">
@@ -89,6 +104,7 @@
                                         data-otp-index="{{ $i }}"
                                         aria-invalid="false"
                                         aria-describedby="email-otp-error"
+                                        @disabled($otpLocked)
                                     >
                                 @endfor
                             </div>
@@ -96,8 +112,8 @@
                                 id="email-otp-error"
                                 class="lml-chatbot-sms-verify__error"
                                 data-lml-otp-error
-                                hidden
-                            ></p>
+                                @if ($otpVerifyError === '') hidden @endif
+                            >{{ $otpVerifyError }}</p>
                         </fieldset>
 
                         <button
@@ -113,11 +129,23 @@
                         <p
                             class="lml-chatbot-sms-verify__timer"
                             data-lml-otp-timer
+                            @if ($otpLocked) hidden @endif
                         >
                             <i class="bi bi-clock" aria-hidden="true"></i>
                             <span data-lml-otp-timer-text>
                                 The code will expire in
-                                <strong data-lml-otp-timer-value>02:59</strong>
+                                <strong data-lml-otp-timer-value>{{ sprintf('%02d:%02d', intdiv($otpSeconds, 60), $otpSeconds % 60) }}</strong>
+                            </span>
+                        </p>
+                        <p
+                            class="lml-chatbot-sms-verify__timer is-expired"
+                            data-lml-otp-lock-timer
+                            @if (! $otpLocked) hidden @endif
+                        >
+                            <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                            <span data-lml-otp-lock-timer-text>
+                                You have reached the maximum number of attempts. Please try again in
+                                <strong data-lml-otp-lock-timer-value>{{ sprintf('%02d:%02d', intdiv($otpLockSeconds, 60), $otpLockSeconds % 60) }}</strong>.
                             </span>
                         </p>
                         <span
@@ -131,10 +159,15 @@
                             <i class="bi bi-info-circle" aria-hidden="true"></i>
                             <span>Didn't receive a code?</span>
                             <button
-                                type="button"
+                                type="submit"
                                 class="lml-chatbot-sms-verify__resend-btn lml-focus-ring"
-                                data-lml-otp-resend
-                                disabled
+                                formaction="{{ route('chatbot.household.verification.email.send') }}"
+                                formmethod="post"
+                                data-lml-otp-resend-server
+                                @disabled($otpLocked)
+                                @if ($otpLocked)
+                                    title="Verification is temporarily locked"
+                                @endif
                             >
                                 Resend Email
                             </button>

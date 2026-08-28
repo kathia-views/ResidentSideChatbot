@@ -84,10 +84,10 @@
                     --}}
                     <form
                         class="lml-chatbot-register__form"
-                        action="{{ route('chatbot.register') }}"
+                        action="{{ route('chatbot.register.store') }}"
                         method="post"
                         novalidate
-                        onsubmit="return false;"
+                        
                     >
                         @csrf
 

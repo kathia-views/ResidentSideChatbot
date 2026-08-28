@@ -4,10 +4,6 @@ function initHouseholdRequestForm(root) {
         return;
     }
 
-    const statusUrl = root.dataset.statusUrl;
-    if (!statusUrl) {
-        return;
-    }
     const fieldRules = [
         {
             name: 'householdNo',
@@ -109,8 +105,6 @@ function initHouseholdRequestForm(root) {
     });
 
     form.addEventListener('submit', (event) => {
-        event.preventDefault();
-
         let firstInvalid = null;
 
         fieldRules.forEach(({ name, errorId, validate }) => {
@@ -134,11 +128,13 @@ function initHouseholdRequestForm(root) {
         });
 
         if (firstInvalid) {
+            event.preventDefault();
             firstInvalid.focus();
             return;
         }
 
-        window.location.assign(statusUrl);
+        // Valid client check: allow the native POST to Laravel. Do not
+        // replace submission with window.location.assign or a local redirect.
     });
 }
 

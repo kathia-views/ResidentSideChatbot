@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Schema;
 
 class Resident extends Model
 {
@@ -89,5 +90,46 @@ class Resident extends Model
     public function dewormingRecords(): HasMany
     {
         return $this->hasMany(DewormingRecord::class);
+    }
+
+    /**
+     * Chatbot linking only. Live MySQL PK is `resident_id`; sqlite tests use `id`.
+     * Other Resident relations keep Laravel's default `id` local key.
+     */
+    public static function resolvedPrimaryKeyName(): string
+    {
+        static $resolved = null;
+
+        if ($resolved !== null) {
+            return $resolved;
+        }
+
+        try {
+            if (! Schema::hasTable('residents')) {
+                return $resolved = 'id';
+            }
+
+            if (Schema::hasColumn('residents', 'id')) {
+                return $resolved = 'id';
+            }
+
+            if (Schema::hasColumn('residents', 'resident_id')) {
+                return $resolved = 'resident_id';
+            }
+        } catch (\Throwable) {
+            return $resolved = 'id';
+        }
+
+        return $resolved = 'id';
+    }
+
+    /**
+     * Optional chatbot login account. Official identity does not require an account.
+     *
+     * @return HasOne<ResidentAccount, $this>
+     */
+    public function residentAccount(): HasOne
+    {
+        return $this->hasOne(ResidentAccount::class, 'resident_id', static::resolvedPrimaryKeyName());
     }
 }

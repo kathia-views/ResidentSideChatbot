@@ -57,6 +57,7 @@
 @import './pages/health-records-maternal.css';
 @import './pages/health-records-death.css';
 @import './pages/death-requests.css';
+@import './pages/announcement.css';
 
 /*
  * Tailwind theme colors reference tokens.css (:root variables).

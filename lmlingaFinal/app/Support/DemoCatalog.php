@@ -24,14 +24,14 @@ final class DemoCatalog
     }
 
     /**
-     * Resident chatbot accounts for User Management → Residents.
+     * Resident chatbot accounts for User Management → Residents (MySQL/test DB).
      * Distinct from householdRequests() / findHouseholdRequest().
      *
      * @return list<array<string, mixed>>
      */
     public static function residentAccounts(): array
     {
-        return DemoResidentAccounts::all();
+        return ResidentAccountUiCatalog::all();
     }
 
     /**
@@ -39,7 +39,7 @@ final class DemoCatalog
      */
     public static function findResidentAccount(string $id): ?array
     {
-        return DemoResidentAccounts::find($id);
+        return ResidentAccountUiCatalog::find($id);
     }
 
     /**

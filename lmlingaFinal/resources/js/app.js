@@ -40,5 +40,8 @@ import './pages/health-records-maternal-add';
 import './pages/health-records-death';
 import './pages/health-records-death-form';
 import './pages/death-requests';
+import './pages/announcement';
+import './pages/announcement-list';
+import './pages/announcement-manage';
 
 window.bootstrap = bootstrap;

@@ -9,7 +9,6 @@
     @endphp
     <div
         class="lml-chatbot-household-request"
-        data-status-url="{{ route('chatbot.household.verification.status', ['state' => 'verifying']) }}"
         data-hh-preview-state="{{ $previewState }}"
     >
         <div class="lml-chatbot-household-request__inner">
@@ -41,6 +40,12 @@
                         </p>
                     </div>
 
+                    @if (session('household_request_validation'))
+                        <p class="lml-chatbot-household-request__intro" role="status">
+                            {{ session('household_request_validation') }}
+                        </p>
+                    @endif
+
                     @if ($isDailyLimit)
                         <div class="lml-hh-status lml-hh-status--inline" role="alert">
                             <p class="lml-hh-status__badge lml-hh-status__badge--daily-limit">
@@ -54,13 +59,8 @@
                             </p>
                         </div>
                     @else
-                    {{--
-                        UI-phase form: method stays POST with CSRF for secure markup.
-                        Submission is intercepted by client-side validation until backend persistence is wired.
-                        Do not use method="get" (would expose request data in the URL).
-                    --}}
                     <form
-                        action="{{ route('chatbot.household.verification') }}"
+                        action="{{ route('chatbot.household.verification.store') }}"
                         method="post"
                         novalidate
                         data-lml-household-request-form
@@ -83,12 +83,14 @@
                                         id="hh-household-no"
                                         name="householdNo"
                                         type="text"
-                                        class="form-control lml-form-control lml-focus-ring"
+                                        value="{{ old('householdNo') }}"
+                                        class="form-control lml-form-control lml-focus-ring{{ $errors->has('householdNo') ? ' is-invalid' : '' }}"
                                         placeholder="Enter household number"
                                         required
                                         aria-required="true"
+                                        @if ($errors->has('householdNo')) aria-invalid="true" aria-describedby="hh-household-no-error" @endif
                                     >
-                                    <p class="lml-form-error" id="hh-household-no-error" hidden></p>
+                                    <p class="lml-form-error" id="hh-household-no-error" @if (! $errors->has('householdNo')) hidden @endif>{{ $errors->first('householdNo') }}</p>
                                 </div>
 
                                 <div class="lml-chatbot-household-request__field">
@@ -98,24 +100,25 @@
                                     <select
                                         id="hh-relationship"
                                         name="relationship"
-                                        class="form-select lml-form-control lml-focus-ring"
+                                        class="form-select lml-form-control lml-focus-ring{{ $errors->has('relationship') ? ' is-invalid' : '' }}"
                                         required
                                         aria-required="true"
+                                        @if ($errors->has('relationship')) aria-invalid="true" aria-describedby="hh-relationship-error" @endif
                                     >
                                         <option value="">Select your relationship</option>
-                                        <option>Household Head</option>
-                                        <option>Spouse</option>
-                                        <option>Son</option>
-                                        <option>Daughter</option>
-                                        <option>Parent</option>
-                                        <option>Sibling</option>
-                                        <option>Grandparent</option>
-                                        <option>Grandchild</option>
-                                        <option>Relative</option>
-                                        <option>Non-relative household member</option>
-                                        <option>Other</option>
+                                        <option @selected(old('relationship') === 'Household Head')>Household Head</option>
+                                        <option @selected(old('relationship') === 'Spouse')>Spouse</option>
+                                        <option @selected(old('relationship') === 'Son')>Son</option>
+                                        <option @selected(old('relationship') === 'Daughter')>Daughter</option>
+                                        <option @selected(old('relationship') === 'Parent')>Parent</option>
+                                        <option @selected(old('relationship') === 'Sibling')>Sibling</option>
+                                        <option @selected(old('relationship') === 'Grandparent')>Grandparent</option>
+                                        <option @selected(old('relationship') === 'Grandchild')>Grandchild</option>
+                                        <option @selected(old('relationship') === 'Relative')>Relative</option>
+                                        <option @selected(old('relationship') === 'Non-relative household member')>Non-relative household member</option>
+                                        <option @selected(old('relationship') === 'Other')>Other</option>
                                     </select>
-                                    <p class="lml-form-error" id="hh-relationship-error" hidden></p>
+                                    <p class="lml-form-error" id="hh-relationship-error" @if (! $errors->has('relationship')) hidden @endif>{{ $errors->first('relationship') }}</p>
                                 </div>
                             </div>
                         </fieldset>
@@ -137,12 +140,14 @@
                                         id="hh-first-name"
                                         name="firstName"
                                         type="text"
-                                        class="form-control lml-form-control lml-focus-ring"
+                                        value="{{ old('firstName') }}"
+                                        class="form-control lml-form-control lml-focus-ring{{ $errors->has('firstName') ? ' is-invalid' : '' }}"
                                         placeholder="First name"
                                         required
                                         aria-required="true"
+                                        @if ($errors->has('firstName')) aria-invalid="true" aria-describedby="hh-first-name-error" @endif
                                     >
-                                    <p class="lml-form-error" id="hh-first-name-error" hidden></p>
+                                    <p class="lml-form-error" id="hh-first-name-error" @if (! $errors->has('firstName')) hidden @endif>{{ $errors->first('firstName') }}</p>
                                 </div>
 
                                 <div class="lml-chatbot-household-request__field">
@@ -153,12 +158,14 @@
                                         id="hh-middle-name"
                                         name="middleName"
                                         type="text"
-                                        class="form-control lml-form-control lml-focus-ring"
+                                        value="{{ old('middleName') }}"
+                                        class="form-control lml-form-control lml-focus-ring{{ $errors->has('middleName') ? ' is-invalid' : '' }}"
                                         placeholder="Middle name"
                                         required
                                         aria-required="true"
+                                        @if ($errors->has('middleName')) aria-invalid="true" aria-describedby="hh-middle-name-error" @endif
                                     >
-                                    <p class="lml-form-error" id="hh-middle-name-error" hidden></p>
+                                    <p class="lml-form-error" id="hh-middle-name-error" @if (! $errors->has('middleName')) hidden @endif>{{ $errors->first('middleName') }}</p>
                                 </div>
 
                                 <div class="lml-chatbot-household-request__field">
@@ -167,12 +174,14 @@
                                         id="hh-last-name"
                                         name="lastName"
                                         type="text"
-                                        class="form-control lml-form-control lml-focus-ring"
+                                        value="{{ old('lastName') }}"
+                                        class="form-control lml-form-control lml-focus-ring{{ $errors->has('lastName') ? ' is-invalid' : '' }}"
                                         placeholder="Last name"
                                         required
                                         aria-required="true"
+                                        @if ($errors->has('lastName')) aria-invalid="true" aria-describedby="hh-last-name-error" @endif
                                     >
-                                    <p class="lml-form-error" id="hh-last-name-error" hidden></p>
+                                    <p class="lml-form-error" id="hh-last-name-error" @if (! $errors->has('lastName')) hidden @endif>{{ $errors->first('lastName') }}</p>
                                 </div>
                             </div>
                         </fieldset>
@@ -196,12 +205,14 @@
                                         type="tel"
                                         inputmode="numeric"
                                         autocomplete="tel"
-                                        class="form-control lml-form-control lml-focus-ring"
+                                        value="{{ old('mobileNumber') }}"
+                                        class="form-control lml-form-control lml-focus-ring{{ $errors->has('mobileNumber') ? ' is-invalid' : '' }}"
                                         placeholder="09XXXXXXXXX"
                                         required
                                         aria-required="true"
+                                        @if ($errors->has('mobileNumber')) aria-invalid="true" aria-describedby="hh-mobile-number-error" @endif
                                     >
-                                    <p class="lml-form-error" id="hh-mobile-number-error" hidden></p>
+                                    <p class="lml-form-error" id="hh-mobile-number-error" @if (! $errors->has('mobileNumber')) hidden @endif>{{ $errors->first('mobileNumber') }}</p>
                                 </div>
 
                                 <div class="lml-chatbot-household-request__field">
@@ -211,12 +222,14 @@
                                         name="emailAddress"
                                         type="email"
                                         autocomplete="email"
-                                        class="form-control lml-form-control lml-focus-ring"
+                                        value="{{ old('emailAddress') }}"
+                                        class="form-control lml-form-control lml-focus-ring{{ $errors->has('emailAddress') ? ' is-invalid' : '' }}"
                                         placeholder="name@example.com"
                                         required
                                         aria-required="true"
+                                        @if ($errors->has('emailAddress')) aria-invalid="true" aria-describedby="hh-email-address-error" @endif
                                     >
-                                    <p class="lml-form-error" id="hh-email-address-error" hidden></p>
+                                    <p class="lml-form-error" id="hh-email-address-error" @if (! $errors->has('emailAddress')) hidden @endif>{{ $errors->first('emailAddress') }}</p>
                                 </div>
                             </div>
                         </fieldset>

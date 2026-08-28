@@ -5,34 +5,31 @@
 @section('body')
     @php
         /*
-         * UI-only resident verification lifecycle for Production Freeze review.
-         * Values: unverified | pending | verified
-         * Optional preview: /chatbot/main?verification=unverified|pending|verified
-         * Wire to real resident verification later — do not invent auth/DB here.
+         * Household CTA / verified access are database-driven for the session ResidentAccount.
+         * Query-string ?verification= must never control verified household state or access.
          */
-        $allowedVerificationStates = ['unverified', 'pending', 'verified'];
-        $verificationState = request()->query('verification', 'verified');
-        if (! in_array($verificationState, $allowedVerificationStates, true)) {
-            $verificationState = 'verified';
+        $householdRequestState = (string) ($householdRequestState ?? 'none');
+        if (! in_array($householdRequestState, ['none', 'pending', 'awaiting_otp', 'approved', 'denied'], true)) {
+            $householdRequestState = 'none';
+        }
+        $householdDecisionReason = trim((string) ($householdDecisionReason ?? ''));
+        $residentDisplayName = trim((string) ($residentDisplayName ?? 'Resident'));
+        if ($residentDisplayName === '') {
+            $residentDisplayName = 'Resident';
+        }
+        $householdDisplayNo = trim((string) ($householdDisplayNo ?? '-'));
+        if ($householdDisplayNo === '') {
+            $householdDisplayNo = '-';
         }
 
-        $householdHref = match ($verificationState) {
-            'pending' => route('chatbot.household.verification.status'),
-            'verified' => route('chatbot.household.information'),
-            default => route('chatbot.household.verification'),
-        };
-
-        $householdAriaLabel = match ($verificationState) {
-            'pending' => 'Access Household Record, verification pending — view request status',
-            'verified' => 'Access Household Record, verified resident',
-            default => 'Access Household Record, start household verification request',
-        };
-
         /*
-         * UI-only demo notifications — verified residents only.
-         * Replace with authenticated household schedule data when backend is wired.
+         * Verified presentation for optional demo notifications only.
+         * Driven by Approved + verified OTP evidence (householdRequestState === approved),
+         * never by ?verification= query string.
          */
-        $chatbotNotifications = $verificationState === 'verified'
+        $isHouseholdVerified = $householdRequestState === 'approved';
+        $verificationState = $isHouseholdVerified ? 'verified' : 'unverified';
+        $chatbotNotifications = $isHouseholdVerified
             ? require resource_path('demo/chatbot-notifications.php')
             : [];
         $chatbotUnreadCount = collect($chatbotNotifications)->where('is_read', false)->count();
@@ -62,10 +59,10 @@
                             <i class="bi bi-person-fill"></i>
                         </div>
                         <div class="lml-chatbot-main__profile-text">
-                            <p class="lml-chatbot-main__resident-name">John Doe</p>
+                            <p class="lml-chatbot-main__resident-name">{{ $residentDisplayName }}</p>
                             <p class="lml-chatbot-main__household">
                                 <i class="bi bi-house-door" aria-hidden="true"></i>
-                                <span>HH 123</span>
+                                <span>{{ $householdDisplayNo }}</span>
                             </p>
                         </div>
                     </div>
@@ -83,32 +80,107 @@
                     </button>
                 </div>
 
-                <a
-                    href="{{ $householdHref }}"
-                    class="lml-chatbot-main__household-btn lml-focus-ring{{ $verificationState === 'pending' ? ' lml-chatbot-main__household-btn--pending' : '' }}{{ $verificationState === 'verified' ? ' lml-chatbot-main__household-btn--verified' : '' }}"
-                    data-lml-sidebar-tab="household"
-                    data-lml-household-btn
-                    data-lml-verification-state="{{ $verificationState }}"
-                    aria-label="{{ $householdAriaLabel }}"
-                    title="Access Household Record"
-                >
+                @if ($householdRequestState === 'pending')
                     <span
-                        class="lml-chatbot-main__household-btn-compact"
-                        aria-hidden="true"
-                    >HH</span>
-                    <span class="lml-chatbot-main__nav-label">
-                        {{ $verificationState === 'pending' ? 'Verification Pending' : 'Access Household Record' }}
-                    </span>
-                    @if ($verificationState === 'pending')
-                        <span class="lml-chatbot-main__household-pending">Pending</span>
-                    @elseif ($verificationState === 'verified')
-                        <i
-                            class="bi bi-patch-check-fill lml-chatbot-main__household-verified-badge"
+                        class="lml-chatbot-main__household-btn lml-chatbot-main__household-btn--pending"
+                        data-lml-sidebar-tab="household"
+                        data-lml-household-btn
+                        role="status"
+                        aria-label="Request Sent"
+                        title="Request Sent"
+                    >
+                        <span
+                            class="lml-chatbot-main__household-btn-compact"
                             aria-hidden="true"
-                        ></i>
+                        >HH</span>
+                        <span class="lml-chatbot-main__nav-label">
+                            Request Sent
+                        </span>
+                    </span>
+                @elseif ($householdRequestState === 'awaiting_otp')
+                    <a
+                        href="{{ route('chatbot.household.verification.sms') }}"
+                        class="lml-chatbot-main__household-btn lml-focus-ring"
+                        data-lml-sidebar-tab="household"
+                        data-lml-household-btn
+                        aria-label="Continue Verification"
+                        title="Continue Verification"
+                    >
+                        <span
+                            class="lml-chatbot-main__household-btn-compact"
+                            aria-hidden="true"
+                        >HH</span>
+                        <span class="lml-chatbot-main__nav-label">
+                            Continue Verification
+                        </span>
+                    </a>
+                @elseif ($householdRequestState === 'approved')
+                    {{-- Verified: Access CTA only — never show stored OTP/match decision_reason here. --}}
+                    <a
+                        href="{{ route('chatbot.household.information') }}"
+                        class="lml-chatbot-main__household-btn lml-chatbot-main__household-btn--approved lml-focus-ring"
+                        data-lml-sidebar-tab="household"
+                        data-lml-household-btn
+                        aria-label="Access Household Record"
+                        title="Access Household Record"
+                    >
+                        <span
+                            class="lml-chatbot-main__household-btn-compact"
+                            aria-hidden="true"
+                        >HH</span>
+                        <span class="lml-chatbot-main__nav-label">
+                            Access Household Record
+                        </span>
+                        <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
                         <span class="visually-hidden">Verified</span>
-                    @endif
-                </a>
+                    </a>
+                @elseif ($householdRequestState === 'denied')
+                    <div class="lml-chatbot-main__household-result">
+                        <span
+                            class="lml-chatbot-main__household-btn lml-chatbot-main__household-btn--denied"
+                            data-lml-sidebar-tab="household"
+                            data-lml-household-btn
+                            role="status"
+                            aria-label="Request Could Not Be Verified"
+                            title="Request Could Not Be Verified"
+                        >
+                            <span
+                                class="lml-chatbot-main__household-btn-compact"
+                                aria-hidden="true"
+                            >HH</span>
+                            <span class="lml-chatbot-main__nav-label">
+                                Request Could Not Be Verified
+                            </span>
+                        </span>
+                        @if ($householdDecisionReason !== '')
+                            <p class="lml-chatbot-main__household-reason">{{ $householdDecisionReason }}</p>
+                        @endif
+                        <a
+                            href="{{ route('chatbot.household.verification') }}"
+                            class="lml-chatbot-main__household-retry lml-focus-ring"
+                            aria-label="Request Household Record"
+                        >
+                            Request Household Record
+                        </a>
+                    </div>
+                @else
+                    <a
+                        href="{{ route('chatbot.household.verification') }}"
+                        class="lml-chatbot-main__household-btn lml-focus-ring"
+                        data-lml-sidebar-tab="household"
+                        data-lml-household-btn
+                        aria-label="Request Household Record"
+                        title="Request Household Record"
+                    >
+                        <span
+                            class="lml-chatbot-main__household-btn-compact"
+                            aria-hidden="true"
+                        >HH</span>
+                        <span class="lml-chatbot-main__nav-label">
+                            Request Household Record
+                        </span>
+                    </a>
+                @endif
 
                 <div class="lml-chatbot-main__nav">
                     <button
@@ -472,15 +544,18 @@
                 </div>
 
                 <div class="lml-chatbot-main__sidebar-footer">
-                    <a
-                        href="{{ route('chatbot.landing') }}"
-                        class="lml-chatbot-main__logout lml-focus-ring"
-                        aria-label="Log out and return to chatbot landing"
-                        title="Logout"
-                    >
-                        <i class="bi bi-box-arrow-left" aria-hidden="true"></i>
-                        <span class="lml-chatbot-main__nav-label">Logout</span>
-                    </a>
+                    <form method="post" action="{{ route('chatbot.logout') }}">
+                        @csrf
+                        <button
+                            type="submit"
+                            class="lml-chatbot-main__logout lml-focus-ring"
+                            aria-label="Log out and return to chatbot landing"
+                            title="Logout"
+                        >
+                            <i class="bi bi-box-arrow-left" aria-hidden="true"></i>
+                            <span class="lml-chatbot-main__nav-label">Logout</span>
+                        </button>
+                    </form>
                 </div>
             </aside>
 
@@ -511,7 +586,7 @@
                         <span class="lml-chatbot-main__brand-name">LMLinga</span>
                     </div>
 
-                    <h1 class="lml-chatbot-main__greeting">Hi, John Doe!</h1>
+                    <h1 class="lml-chatbot-main__greeting">Hi, {{ $residentDisplayName }}!</h1>
                     <p class="lml-chatbot-main__welcome-text">
                         This is the Smart Health Support Chatbot.<br>
                         You can ask me in your preferred language.

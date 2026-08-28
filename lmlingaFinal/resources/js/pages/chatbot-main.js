@@ -838,7 +838,7 @@ function initChatbotMain(root) {
     if (householdBtn) {
         householdBtn.addEventListener('click', () => {
             setActiveSidebarTab('household');
-            /* Real hrefs navigate to verification / status / household placeholders. */
+            /* Request Household Record uses a real href; Request Sent is status-only. */
         });
     }
 

@@ -400,16 +400,26 @@
     border-radius: var(--lml-radius-md);
 }
 
+/*Toggle Password Edit*/
+.lml-chatbot-register__field .lml-password-input .lml-form-control.is-invalid,
+.lml-chatbot-register__field .lml-password-input .lml-chatbot-register__control.is-invalid {
+    background-image: none;
+    padding-right: 3rem;
+}
+
 .lml-chatbot-register__field .lml-password-input > .form-control {
     flex: none;
     width: 100%;
 }
 
+
+
+
 .lml-chatbot-register__field .lml-password-input__toggle {
     position: absolute;
     top: 50%;
     right: 0.4rem;
-    z-index: 2;
+    z-index: 5;
     display: inline-flex;
     align-items: center;
     justify-content: center;

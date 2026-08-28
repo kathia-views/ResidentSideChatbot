@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreHealthWorkerRequest;
 use App\Http\Requests\Admin\UpdateHealthWorkerRequest;
 use App\Services\HealthWorkerAccountService;
 use App\Support\HealthWorkerUiCatalog;
+use App\Support\ResidentAccountUiCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
@@ -28,6 +29,7 @@ class HealthWorkerAccountController extends Controller
                 ? 'Manage user accounts and access permissions.'
                 : 'Manage accounts of the Barangay Health Workers',
             'healthWorkers' => $workers,
+            'residentAccounts' => ResidentAccountUiCatalog::all(),
         ]);
     }
 

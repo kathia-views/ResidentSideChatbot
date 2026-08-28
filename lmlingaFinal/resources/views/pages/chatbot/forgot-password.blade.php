@@ -32,19 +32,19 @@
                         </p>
                     </header>
 
-                    {{--
-                        UI-phase form: method stays POST with CSRF for secure markup.
-                        Submission is prevented until resident password-reset backend is wired.
-                        Do not use method="get" (would expose the email in the URL).
-                    --}}
                     <form
                         class="lml-chatbot-forgot-password__form"
-                        action="{{ route('chatbot.password.request') }}"
+                        action="{{ route('chatbot.password.email') }}"
                         method="post"
                         novalidate
-                        onsubmit="return false;"
                     >
                         @csrf
+
+                        @if (session('status'))
+                            <p class="lml-chatbot-forgot-password__card-subtitle" role="status">
+                                {{ session('status') }}
+                            </p>
+                        @endif
 
                         <x-lml.form-group
                             label="Your Email"

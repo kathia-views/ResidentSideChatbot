@@ -15,8 +15,14 @@
         $role = \App\Support\UiRole::shellRole();
         $active = \App\Support\UiRole::sidebarActiveKey($active ?? null);
         $pageTitle = $pageTitle ?? 'Dashboard';
-        $pageSubtitle = $pageSubtitle
-            ?? 'A central view that summarizes key information for quick monitoring and decision-making.';
+        /*
+         | Default Dashboard subtitle only when pageSubtitle is null/unset.
+         | Pass pageSubtitle as '' to intentionally render no topbar subtitle
+         | (e.g. Announcement pages that own their in-content header).
+         */
+        if ($pageSubtitle === null) {
+            $pageSubtitle = 'A central view that summarizes key information for quick monitoring and decision-making.';
+        }
         $userName = \App\Support\UiRole::displayName();
         $userRoleLabel = \App\Support\UiRole::label();
         $facilityLabel = $facilityLabel ?? 'Health Center';

@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'ui.role' => \App\Http\Middleware\PersistUiRole::class,
             'ui.admin' => \App\Http\Middleware\EnsureAdminRole::class,
+            'resident.chatbot' => \App\Http\Middleware\EnsureResidentChatbotAccount::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

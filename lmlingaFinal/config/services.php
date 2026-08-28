@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | IPROG SMS (delivery only)
+    |--------------------------------------------------------------------------
+    |
+    | LMLinga owns OTP generation/verification. IPROG is used only to queue
+    | outbound SMS via POST /sms_messages. Never put the real token in
+    | .env.example or source control.
+    |
+    */
+    'iprog' => [
+        'base_url' => env('IPROG_BASE_URL', 'https://www.iprogsms.com/api/v1'),
+        'api_token' => env('IPROG_API_TOKEN'),
+        'timeout' => (int) env('IPROG_HTTP_TIMEOUT', 10),
+    ],
+
 ];

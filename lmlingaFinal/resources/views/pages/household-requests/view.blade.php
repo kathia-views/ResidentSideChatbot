@@ -9,6 +9,7 @@
 @php
     $request = $demoRequest ?? null;
     $isApproved = strtolower((string) ($request['status'] ?? '')) === 'approved';
+    $isCurrent = (bool) ($request['is_current'] ?? false);
     $rejectionReasons = is_array($request['rejection_reasons'] ?? null)
         ? array_values(array_filter($request['rejection_reasons']))
         : [];
@@ -30,7 +31,7 @@
             @if (! $request)
                 <h1 id="lml-hr-view-title" class="lml-hr-view__title">Household request not found</h1>
                 <p class="lml-hr-view__text">
-                    The selected demo household request could not be loaded.
+                    The selected household request could not be loaded.
                 </p>
             @else
                 <header class="lml-hr-view__header">
@@ -57,8 +58,31 @@
                             <dd>{{ $request['name'] }}</dd>
                         </div>
                         <div class="lml-hr-view__field">
+                            <dt>Household number</dt>
+                            <dd>{{ $request['household_no'] ?? '—' }}</dd>
+                        </div>
+                        <div class="lml-hr-view__field">
                             <dt>Zone</dt>
                             <dd>{{ $request['zone'] ?? '—' }}</dd>
+                        </div>
+                        <div class="lml-hr-view__field">
+                            <dt>Relationship</dt>
+                            <dd>{{ $request['relationship'] ?? '—' }}</dd>
+                        </div>
+                        <div class="lml-hr-view__field">
+                            <dt>Request scope</dt>
+                            <dd>
+                                <span
+                                    @class([
+                                        'lml-hr-table__scope',
+                                        'lml-hr-table__scope--current' => $isCurrent,
+                                        'lml-hr-table__scope--historical' => ! $isCurrent,
+                                    ])
+                                    data-hr-current="{{ $isCurrent ? '1' : '0' }}"
+                                >
+                                    {{ $isCurrent ? 'Current' : 'Historical' }}
+                                </span>
+                            </dd>
                         </div>
                         <div class="lml-hr-view__field">
                             <dt>Request status</dt>
@@ -83,41 +107,16 @@
                             <dd>{{ $request['evaluated_at'] ?? '—' }}</dd>
                         </div>
                         <div class="lml-hr-view__field">
+                            <dt>Approved</dt>
+                            <dd>{{ $request['approved_at'] ?? '—' }}</dd>
+                        </div>
+                        <div class="lml-hr-view__field">
                             <dt>Mobile</dt>
                             <dd>{{ $request['mobile'] ?? '—' }}</dd>
                         </div>
-                        <div class="lml-hr-view__field lml-hr-view__field--full">
-                            <dt>Household address</dt>
-                            <dd>
-                                {{ trim(implode(', ', array_filter([
-                                    $request['house_no'] ?? null,
-                                    $request['street'] ?? null,
-                                    $request['barangay'] ?? null,
-                                    $request['zone'] ?? null,
-                                ]))) ?: '—' }}
-                            </dd>
-                        </div>
-                        <div class="lml-hr-view__field lml-hr-view__field--full">
-                            <dt>Household members</dt>
-                            <dd>
-                                @php
-                                    $members = $request['household_members'] ?? [];
-                                @endphp
-                                @if (is_array($members) && count($members) > 0)
-                                    <ul class="lml-hr-view__members">
-                                        @foreach ($members as $member)
-                                            <li>
-                                                {{ $member['name'] ?? 'Member' }}
-                                                @if (! empty($member['relationship']))
-                                                    <span>({{ $member['relationship'] }})</span>
-                                                @endif
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                @else
-                                    —
-                                @endif
-                            </dd>
+                        <div class="lml-hr-view__field">
+                            <dt>Email</dt>
+                            <dd>{{ $request['email'] ?? '—' }}</dd>
                         </div>
                     </dl>
                 </section>

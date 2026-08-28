@@ -13,11 +13,11 @@
     /*
      | Admin order:
      | Dashboard → User Management → Requests (Household Requests, Death Requests)
-     | → Spot Mapping → Household Profiling → Environmental Health →
+     | → Announcement → Spot Mapping → Household Profiling → Environmental Health →
      | Health Records (expandable).
      |
      | Health Worker order (after role filter):
-     | Dashboard → Spot Mapping → Household Profiling → Environmental Health →
+     | Dashboard → Announcement → Spot Mapping → Household Profiling → Environmental Health →
      | Health Records (expandable).
      |
      | Admin-only: User Management, Requests (Household Requests, Death Requests).
@@ -81,6 +81,16 @@
                     ]),
                 ],
             ],
+        ],
+        [
+            'key' => 'announcement',
+            'label' => 'Announcement',
+            'icon' => 'bi-megaphone',
+            'href' => $resolveNamedHref([
+                'announcements.index',
+                'announcement.index',
+            ]),
+            'roles' => ['admin', 'bhw', 'bns', 'bspo'],
         ],
         [
             'key' => 'spot-mapping',

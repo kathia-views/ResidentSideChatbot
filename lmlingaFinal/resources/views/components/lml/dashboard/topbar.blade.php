@@ -22,12 +22,16 @@
             <i class="bi bi-list" aria-hidden="true"></i>
         </button>
 
-        <div class="lml-topbar__titles">
-            <h1 class="lml-topbar__title">{{ $title }}</h1>
-            @if ($subtitle)
-                <p class="lml-topbar__subtitle mb-0">{{ $subtitle }}</p>
-            @endif
-        </div>
+        @if (filled($title) || filled($subtitle))
+            <div class="lml-topbar__titles">
+                @if (filled($title))
+                    <h1 class="lml-topbar__title">{{ $title }}</h1>
+                @endif
+                @if (filled($subtitle))
+                    <p class="lml-topbar__subtitle mb-0">{{ $subtitle }}</p>
+                @endif
+            </div>
+        @endif
     </div>
 
     <div class="lml-topbar__end">

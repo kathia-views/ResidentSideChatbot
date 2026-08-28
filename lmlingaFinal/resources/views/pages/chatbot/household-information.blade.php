@@ -3,67 +3,6 @@
 @section('title', 'Household Member Information - LMLinga')
 
 @section('body')
-    @php
-        /*
-         * UI-only verified household preview.
-         * Replace with authorized resident household data when the backend is implemented.
-         */
-        $members = [
-            [
-                'id' => 'jane-a-doe',
-                'name' => 'Jane A. Doe',
-                'age' => '38 years old',
-                'sex' => 'Female',
-                'relationship' => 'Head of Household',
-                'birthday' => 'May 20, 1988',
-                'civilStatus' => 'Married',
-                'occupation' => 'Teacher',
-                'weight' => '48 kg',
-                'height' => '157 cm',
-                'nutrition' => 'Normal',
-            ],
-            [
-                'id' => 'carlo-f-doe',
-                'name' => 'Carlo F. Doe',
-                'age' => '38 years old',
-                'sex' => 'Male',
-                'relationship' => 'Husband',
-                'birthday' => 'January 12, 1988',
-                'civilStatus' => 'Married',
-                'occupation' => 'Teacher',
-                'weight' => '62 kg',
-                'height' => '164 cm',
-                'nutrition' => 'Normal',
-            ],
-            [
-                'id' => 'janine-a-doe',
-                'name' => 'Janine A. Doe',
-                'age' => '21 years old',
-                'sex' => 'Female',
-                'relationship' => 'Daughter',
-                'birthday' => 'April 11, 2005',
-                'civilStatus' => 'Single',
-                'occupation' => 'N/A (Student)',
-                'weight' => '48 kg',
-                'height' => '164 cm',
-                'nutrition' => 'Normal',
-            ],
-            [
-                'id' => 'jaica-a-doe',
-                'name' => 'Jaica A. Doe',
-                'age' => '8 months old',
-                'sex' => 'Female',
-                'relationship' => 'Daughter',
-                'birthday' => 'December 7, 2025',
-                'civilStatus' => 'Single',
-                'occupation' => 'N/A',
-                'weight' => '11.5 kg',
-                'height' => '87 cm',
-                'nutrition' => 'Normal',
-            ],
-        ];
-    @endphp
-
     <div class="lml-chatbot-household-info" data-lml-household-info>
         <div
             class="lml-chatbot-household-info__overlay"
@@ -84,10 +23,10 @@
                             <i class="bi bi-person-fill"></i>
                         </span>
                         <div class="lml-chatbot-household-info__profile-text">
-                            <p class="lml-chatbot-household-info__resident-name">John Doe</p>
+                            <p class="lml-chatbot-household-info__resident-name">{{ $residentDisplayName }}</p>
                             <p class="lml-chatbot-household-info__household-number">
                                 <i class="bi bi-house-door" aria-hidden="true"></i>
-                                <span>HH 123</span>
+                                <span>{{ $householdDisplayNo }}</span>
                             </p>
                         </div>
                     </div>
@@ -109,6 +48,7 @@
                     href="{{ route('chatbot.household.information') }}"
                     class="lml-chatbot-household-info__access lml-focus-ring"
                     aria-current="page"
+                    data-lml-sidebar-tab="household"
                 >
                     <span class="lml-chatbot-household-info__access-compact" aria-hidden="true">HH</span>
                     <span class="lml-chatbot-household-info__sidebar-label">Access Household Record</span>
@@ -123,27 +63,30 @@
                     <dl class="lml-chatbot-household-info__summary-list">
                         <div>
                             <dt>Adults</dt>
-                            <dd>2</dd>
+                            <dd>{{ $summaryAdults }}</dd>
                         </div>
                         <div>
                             <dt>Youth</dt>
-                            <dd>1</dd>
+                            <dd>{{ $summaryYouth }}</dd>
                         </div>
                         <div>
                             <dt>Children</dt>
-                            <dd>1</dd>
+                            <dd>{{ $summaryChildren }}</dd>
                         </div>
                     </dl>
                 </section>
 
                 <div class="lml-chatbot-household-info__sidebar-footer">
-                    <a
-                        href="{{ route('chatbot.landing') }}"
-                        class="lml-chatbot-household-info__logout lml-focus-ring"
-                    >
-                        <i class="bi bi-box-arrow-left" aria-hidden="true"></i>
-                        <span class="lml-chatbot-household-info__sidebar-label">Logout</span>
-                    </a>
+                    <form method="post" action="{{ route('chatbot.logout') }}">
+                        @csrf
+                        <button
+                            type="submit"
+                            class="lml-chatbot-household-info__logout lml-focus-ring"
+                        >
+                            <i class="bi bi-box-arrow-left" aria-hidden="true"></i>
+                            <span class="lml-chatbot-household-info__sidebar-label">Logout</span>
+                        </button>
+                    </form>
                 </div>
             </aside>
 
@@ -165,7 +108,7 @@
                 <header class="lml-chatbot-household-info__header">
                     <div class="lml-chatbot-household-info__heading">
                         <a
-                            href="{{ route('chatbot.main', ['verification' => 'verified']) }}"
+                            href="{{ route('chatbot.main') }}"
                             class="lml-chatbot-household-info__back lml-focus-ring"
                             aria-label="Back to verified resident chatbot"
                         >

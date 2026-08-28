@@ -1,7 +1,7 @@
 <?php
 
-use App\Support\DemoCatalog;
 use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\HouseholdProfiling\ChildBirthHistoryController;
 use App\Http\Controllers\HouseholdProfiling\DewormingRecordController;
 use App\Http\Controllers\HouseholdProfiling\DeathController;
@@ -15,6 +15,15 @@ use App\Support\DemoFamilyPlanning;
 use App\Support\ChildBirthHistoryService;
 use App\Support\HealthMemberIdentity;
 use App\Support\HealthRecordsDeworming;
+
+//Chatbot Controller
+use App\Http\Controllers\Chatbot\ResidentRegistrationController;
+use App\Http\Controllers\Chatbot\ResidentLoginController;
+use App\Http\Controllers\Chatbot\ResidentForgotPasswordController;
+use App\Http\Controllers\Chatbot\ResidentResetPasswordController;
+use App\Http\Controllers\Chatbot\HouseholdRecordRequestController;
+use App\Http\Controllers\Chatbot\HouseholdInformationController;
+use App\Http\Controllers\Chatbot\ChatbotMainController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -42,35 +51,79 @@ Route::view('/chatbot', 'pages.chatbot.landing')->name('chatbot.landing');
  | Do NOT point chatbot CTAs at staff /login or /register (BHW/BNS/BSPO).
  */
 Route::view('/chatbot/register', 'pages.chatbot.register')->name('chatbot.register');
+Route::post('/chatbot/register', [ResidentRegistrationController::class, 'store'])->name('chatbot.register.store');
 Route::view('/chatbot/login', 'pages.chatbot.login')->name('chatbot.login');
+Route::post('/chatbot/login', [ResidentLoginController::class, 'store'])->name('chatbot.login.store');
+Route::post('/chatbot/logout', [ResidentLoginController::class, 'destroy'])->name('chatbot.logout');
 Route::view('/chatbot/forgot-password', 'pages.chatbot.forgot-password')->name('chatbot.password.request');
-Route::view('/chatbot/reset-password', 'pages.chatbot.reset-password')->name('chatbot.password.reset');
+Route::post('/chatbot/forgot-password', [ResidentForgotPasswordController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('chatbot.password.email');
+Route::get('/chatbot/reset-password/{token}', [ResidentResetPasswordController::class, 'create'])
+    ->name('chatbot.password.reset');
+Route::post('/chatbot/reset-password', [ResidentResetPasswordController::class, 'store'])
+    ->name('chatbot.password.update');
 
 /*
- | Resident AI Chatbot main interface (UI-only; no AI/auth/persistence yet).
+ | Resident AI Chatbot main interface.
+ | Stays publicly reachable (login lands here). Household CTA reads Pending state
+ | from the resident chatbot session when present; guests see Request.
  */
-Route::view('/chatbot/main', 'pages.chatbot.main')->name('chatbot.main');
+Route::get('/chatbot/main', [ChatbotMainController::class, 'show'])->name('chatbot.main');
 
 /*
- | Resident household verification lifecycle (UI-only).
- | No forms persistence, approval workflow, auth checks, or database writes.
+ | Resident household verification request form.
+ | GET/POST are gated by chatbot session. Valid POST inserts Pending record_requests,
+ | evaluates against the official masterlist, then:
+ | Unique match → Awaiting OTP → automatic SMS OTP → SMS verification UI.
+ | Mismatch → Denied → chatbot.main. Approved remains reserved for later OTP success.
  */
-Route::view('/chatbot/household/verification', 'pages.chatbot.household-request')
+Route::get('/chatbot/household/verification', [HouseholdRecordRequestController::class, 'create'])
+    ->middleware('resident.chatbot')
     ->name('chatbot.household.verification');
 
-Route::view('/chatbot/household/verification/sms', 'pages.chatbot.household-sms-verification')
+Route::post('/chatbot/household/verification', [HouseholdRecordRequestController::class, 'store'])
+    ->middleware('resident.chatbot')
+    ->name('chatbot.household.verification.store');
+
+Route::get('/chatbot/household/verification/method', [HouseholdRecordRequestController::class, 'otpMethod'])
+    ->middleware('resident.chatbot')
+    ->name('chatbot.household.verification.otp-method');
+
+Route::get('/chatbot/household/verification/sms', [HouseholdRecordRequestController::class, 'sms'])
+    ->middleware('resident.chatbot')
     ->name('chatbot.household.verification.sms');
 
-Route::view('/chatbot/household/verification/email', 'pages.chatbot.household-email-verification')
+Route::post('/chatbot/household/verification/sms/send', [HouseholdRecordRequestController::class, 'sendSmsOtp'])
+    ->middleware('resident.chatbot')
+    ->name('chatbot.household.verification.sms.send');
+
+Route::post('/chatbot/household/verification/sms/verify', [HouseholdRecordRequestController::class, 'verifySmsOtp'])
+    ->middleware('resident.chatbot')
+    ->name('chatbot.household.verification.sms.verify');
+
+Route::get('/chatbot/household/verification/email', [HouseholdRecordRequestController::class, 'email'])
+    ->middleware('resident.chatbot')
     ->name('chatbot.household.verification.email');
 
-Route::get('/chatbot/household/verification/status', function () {
-    return view('pages.chatbot.household-verification-status', [
-        'state' => request()->query('state', 'verifying'),
-    ]);
-})->name('chatbot.household.verification.status');
+Route::post('/chatbot/household/verification/email/send', [HouseholdRecordRequestController::class, 'sendEmailOtp'])
+    ->middleware('resident.chatbot')
+    ->name('chatbot.household.verification.email.send');
 
-Route::view('/chatbot/household', 'pages.chatbot.household-information')
+Route::post('/chatbot/household/verification/email/verify', [HouseholdRecordRequestController::class, 'verifyEmailOtp'])
+    ->middleware('resident.chatbot')
+    ->name('chatbot.household.verification.email.verify');
+
+Route::get('/chatbot/household/verification/status', [HouseholdRecordRequestController::class, 'status'])
+    ->middleware('resident.chatbot')
+    ->name('chatbot.household.verification.status');
+
+/*
+ | Authorized household member information for Approved chatbot accounts.
+ | Household scope is resolved server-side from session account relationships.
+ */
+Route::get('/chatbot/household', [HouseholdInformationController::class, 'show'])
+    ->middleware('resident.chatbot')
     ->name('chatbot.household.information');
 
 /*
@@ -135,89 +188,35 @@ Route::middleware('ui.role')->group(function () {
          | Resident accounts (User Management → Residents) — ra-* IDs.
          | Compatibility: res-* IDs still redirect to Household Requests details.
          */
-        Route::get('/user-management/residents/{id}/view', function (string $id) {
-            if (preg_match('/^res-\d+$/', $id) === 1) {
-                return redirect()->route('household-requests.view', ['id' => $id], 301);
-            }
+        Route::get('/user-management/residents/{id}/view', [
+            \App\Http\Controllers\Admin\ResidentAccountController::class,
+            'show',
+        ])->where('id', '(ra|res)-\d+')->name('user-management.residents.view');
 
-            $resident = DemoCatalog::findResidentAccount($id);
+        Route::get('/user-management/residents/{id}/edit', [
+            \App\Http\Controllers\Admin\ResidentAccountController::class,
+            'edit',
+        ])->where('id', 'ra-\d+')->name('user-management.residents.edit');
 
-            return view('pages.user-management.residents.view', [
-                'active' => 'user-management',
-                'pageTitle' => 'Resident Information',
-                'pageSubtitle' => 'Manage user accounts and access permissions.',
-                'residentId' => $id,
-                'demoResident' => $resident,
-            ]);
-        })->where('id', '(ra|res)-\d+')->name('user-management.residents.view');
+        Route::put('/user-management/residents/{id}', [
+            \App\Http\Controllers\Admin\ResidentAccountController::class,
+            'update',
+        ])->where('id', 'ra-\d+')->name('user-management.residents.update');
 
-        Route::get('/user-management/residents/{id}/edit', function (string $id) {
-            $resident = DemoCatalog::findResidentAccount($id);
+        Route::delete('/user-management/residents/{id}', [
+            \App\Http\Controllers\Admin\ResidentAccountController::class,
+            'destroy',
+        ])->where('id', 'ra-\d+')->name('user-management.residents.destroy');
 
-            return view('pages.user-management.residents.edit', [
-                'active' => 'user-management',
-                'pageTitle' => 'Edit Resident Information',
-                'pageSubtitle' => 'Manage user accounts and access permissions.',
-                'residentId' => $id,
-                'demoResident' => $resident,
-            ]);
-        })->where('id', 'ra-\d+')->name('user-management.residents.edit');
-
-        Route::put('/user-management/residents/{id}', function (string $id) {
-            if (DemoCatalog::findResidentAccount($id) === null) {
-                abort(404, 'Resident account not found.');
-            }
-
-            $validated = request()->validate([
-                'first_name' => ['required', 'string', 'max:100'],
-                'middle_name' => ['nullable', 'string', 'max:100'],
-                'last_name' => ['required', 'string', 'max:100'],
-                'zone' => ['required', 'string', 'in:'.implode(',', \App\Support\DemoResidentAccounts::ALLOWED_ZONES)],
-                'email' => ['required', 'email', 'max:255'],
-            ]);
-
-            $updated = \App\Support\DemoResidentAccounts::update($id, $validated);
-
-            if ($updated === null) {
-                abort(404, 'Resident account not found.');
-            }
-
-            return redirect()
-                ->route('user-management.residents.view', ['id' => $id])
-                ->with('status', 'Resident account updated successfully.');
-        })->where('id', 'ra-\d+')->name('user-management.residents.update');
-
-        Route::delete('/user-management/residents/{id}', function (string $id) {
-            $resident = DemoCatalog::findResidentAccount($id);
-
-            if ($resident === null) {
-                abort(404, 'Resident account not found.');
-            }
-
-            \App\Support\DemoResidentAccounts::delete($id);
-
-            return redirect()
-                ->route('user-management.index', ['tab' => 'residents'])
-                ->with('status', 'Resident account deleted successfully.');
-        })->where('id', 'ra-\d+')->name('user-management.residents.destroy');
-
-        Route::view('/household-requests', 'pages.household-requests.index', [
-            'active' => 'household-requests',
-            'pageTitle' => 'Household Requests',
-            'pageSubtitle' => 'Monitor automatic household record verification history and results.',
+        Route::get('/household-requests', [
+            \App\Http\Controllers\Admin\HouseholdRequestController::class,
+            'index',
         ])->name('household-requests.index');
 
-        Route::get('/household-requests/{id}/view', function (string $id) {
-            $request = DemoCatalog::findHouseholdRequest($id);
-
-            return view('pages.household-requests.view', [
-                'active' => 'household-requests',
-                'pageTitle' => 'Household Request Details',
-                'pageSubtitle' => 'Automatic verification result for this household record access request.',
-                'requestId' => $id,
-                'demoRequest' => $request,
-            ]);
-        })->where('id', 'res-\d+')->name('household-requests.view');
+        Route::get('/household-requests/{id}/view', [
+            \App\Http\Controllers\Admin\HouseholdRequestController::class,
+            'show',
+        ])->where('id', 'rr-\d+|res-\d+')->name('household-requests.view');
 
         Route::get('/death-requests', [
             \App\Http\Controllers\DeathRequests\DeathRequestReviewController::class,
@@ -244,6 +243,36 @@ Route::middleware('ui.role')->group(function () {
             'certificate',
         ])->whereNumber('deathRequest')->name('death-requests.certificate');
     });
+
+    /*
+     | Announcement — dashboard overview + create + view-all list pages (frontend prototype).
+     | Legacy /announcement redirects to /announcements.
+     */
+    Route::redirect('/announcement', '/announcements', 301);
+
+    Route::view('/announcements', 'pages.announcements.index', [
+        'active' => 'announcement',
+        'pageTitle' => '',
+        'pageSubtitle' => '',
+    ])->name('announcements.index');
+
+    Route::view('/announcements/create', 'pages.announcements.create', [
+        'active' => 'announcement',
+        'pageTitle' => 'Add Announcement',
+        'pageSubtitle' => 'Create and publish a health notice for residents.',
+    ])->name('announcements.create');
+
+    Route::view('/announcements/upcoming', 'pages.announcements.upcoming', [
+        'active' => 'announcement',
+        'pageTitle' => '',
+        'pageSubtitle' => '',
+    ])->name('announcements.upcoming');
+
+    Route::view('/announcements/recent', 'pages.announcements.recent', [
+        'active' => 'announcement',
+        'pageTitle' => '',
+        'pageSubtitle' => '',
+    ])->name('announcements.recent');
 
     Route::view('/spot-mapping', 'pages.spot-mapping.index', [
         'active' => 'spot-mapping',

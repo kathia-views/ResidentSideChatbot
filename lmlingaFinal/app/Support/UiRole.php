@@ -123,6 +123,12 @@ final class UiRole
             'user-management' => ['user-management', 'user-management.*'],
             'household-requests' => ['household-requests', 'household-requests.*'],
             'death-requests' => ['death-requests', 'death-requests.*'],
+            'announcement' => [
+                'announcements',
+                'announcements.*',
+                'announcement',
+                'announcement.*',
+            ],
             /*
              | Household Water Supply continues the Spot Mapping plot workflow.
              | Match these before environmental-health.* so the sidebar stays on

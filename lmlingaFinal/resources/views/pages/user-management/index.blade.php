@@ -8,7 +8,7 @@
 
 @php
     $demoWorkers = $healthWorkers ?? \App\Support\DemoCatalog::healthWorkers();
-    $demoResidents = \App\Support\DemoCatalog::residentAccounts();
+    $demoResidents = $residentAccounts ?? [];
     $demoTotal = count($demoWorkers);
     $categoryOptions = [
         'all' => 'All',

@@ -5,6 +5,7 @@ namespace App\Support;
 /**
  * Session-backed demo store for resident account CRUD (UI preview).
  * Seeded from resources/demo/resident-accounts.php. Distinct from Household Requests.
+ * Not used as the live Admin → User Management → Residents data source.
  */
 final class DemoResidentAccounts
 {

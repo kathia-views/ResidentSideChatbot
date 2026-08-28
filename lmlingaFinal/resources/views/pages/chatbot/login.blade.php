@@ -32,12 +32,17 @@
                     --}}
                     <form
                         class="lml-chatbot-login__form"
-                        action="{{ route('chatbot.login') }}"
+                        action="{{ route('chatbot.login.store') }}"
                         method="post"
                         novalidate
-                        onsubmit="return false;"
                     >
                         @csrf
+
+                        @if (session('success'))
+                            <p class="lml-chatbot-login__card-subtitle" role="status">
+                                {{ session('success') }}
+                            </p>
+                        @endif
 
                         <x-lml.form-group
                             label="Email"

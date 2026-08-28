@@ -4,8 +4,8 @@
 
 @php
     $allowed = ['verifying', 'approved', 'rejected', 'failed-1', 'failed-2', 'failed-3', 'daily-limit'];
-    $state = in_array((string) ($state ?? 'verifying'), $allowed, true)
-        ? (string) $state
+    $state = in_array((string) ($uiState ?? 'verifying'), $allowed, true)
+        ? (string) $uiState
         : 'verifying';
 
     $copy = match ($state) {
@@ -48,7 +48,8 @@
 
     $canRetry = in_array($state, ['rejected', 'failed-1', 'failed-2'], true);
     $isBlocked = in_array($state, ['failed-3', 'daily-limit'], true);
-    $isSuccess = $state === 'approved';
+    $grantHouseholdAccess = false;
+    $isSuccess = $state === 'approved' && $grantHouseholdAccess;
     $isPending = $state === 'verifying';
 @endphp
 

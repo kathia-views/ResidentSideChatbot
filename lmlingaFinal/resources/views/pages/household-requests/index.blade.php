@@ -1,5 +1,5 @@
 {{--
-    Household Requests — Admin monitoring / history (UI only).
+    Household Requests — Admin monitoring / history (read-only).
     Automatic verification. No manual approve/reject workflow.
 --}}
 @extends('layouts.dashboard')
@@ -7,7 +7,8 @@
 @section('title', 'Household Requests - LMLinga')
 
 @php
-    $demoRequests = \App\Support\DemoCatalog::householdRequests();
+    $requests = $requests ?? [];
+    $hasRequests = count($requests) > 0;
     $zoneOptions = [
         'all' => 'All Zones',
         'Zone 1' => 'Zone 1',
@@ -18,13 +19,16 @@
     ];
     $statusOptions = [
         'all' => 'All Statuses',
-        'Approved' => 'Approved',
-        'Rejected' => 'Rejected',
+        \App\Models\RecordRequest::STATUS_PENDING => \App\Models\RecordRequest::STATUS_PENDING,
+        \App\Models\RecordRequest::STATUS_APPROVED => \App\Models\RecordRequest::STATUS_APPROVED,
+        \App\Models\RecordRequest::STATUS_DENIED => \App\Models\RecordRequest::STATUS_DENIED,
+        \App\Models\RecordRequest::STATUS_NO_MATCH => \App\Models\RecordRequest::STATUS_NO_MATCH,
+        \App\Models\RecordRequest::STATUS_AWAITING_OTP => \App\Models\RecordRequest::STATUS_AWAITING_OTP,
     ];
 @endphp
 
 @section('content')
-    <div class="lml-hr" data-lml-household-requests data-demo="true">
+    <div class="lml-hr" data-lml-household-requests>
         <div class="lml-hr__toolbar" role="search" aria-label="Filter household requests">
             <div class="lml-hr__search">
                 <i class="bi bi-search lml-hr__search-icon" aria-hidden="true"></i>
@@ -72,27 +76,34 @@
             </div>
         </div>
 
-        <div class="lml-hr-table-wrap" data-hr-table-wrap>
+        <div class="lml-hr-table-wrap" data-hr-table-wrap @unless ($hasRequests) hidden @endunless>
             <table class="lml-hr-table" data-hr-table>
-                <caption class="visually-hidden">Household record access requests by name, zone, and status</caption>
+                <caption class="visually-hidden">Household record access requests by name, household number, zone, date, and status</caption>
                 <thead>
                     <tr>
                         <th scope="col">Name</th>
+                        <th scope="col">Household No.</th>
                         <th scope="col">Zone</th>
+                        <th scope="col">Date Submitted</th>
                         <th scope="col">Status</th>
                         <th scope="col">View</th>
                     </tr>
                 </thead>
                 <tbody data-hr-tbody>
-                    @foreach ($demoRequests as $request)
+                    @foreach ($requests as $request)
                         <x-lml.household-requests.request-row
                             :id="$request['id']"
                             :name="$request['name']"
                             :first-name="$request['first_name'] ?? ''"
                             :middle-name="$request['middle_name'] ?? ''"
                             :last-name="$request['last_name'] ?? ''"
+                            :household-no="$request['household_no'] ?? ''"
                             :zone="$request['zone']"
+                            :submitted-at="$request['submitted_at'] ?? ''"
                             :status="$request['status']"
+                            :is-current="(bool) ($request['is_current'] ?? false)"
+                            :mobile="$request['mobile'] ?? ''"
+                            :email="$request['email'] ?? ''"
                         />
                     @endforeach
                 </tbody>
@@ -103,7 +114,7 @@
             class="lml-hr__empty"
             role="status"
             aria-live="polite"
-            hidden
+            @if ($hasRequests) hidden @endif
             data-hr-empty
         >
             No household requests match your search, zone, or status filters.

@@ -2,27 +2,49 @@
 
 namespace Tests\Feature;
 
+use App\Models\RecordRequest;
+use App\Models\ResidentAccount;
 use App\Support\UiRole;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class HouseholdRequestVerificationUiTest extends TestCase
 {
+    use RefreshDatabase;
+
+    private function asResident(): self
+    {
+        $account = ResidentAccount::query()->create([
+            'first_name' => 'Ana',
+            'middle_name' => 'Cruz',
+            'last_name' => 'Santos',
+            'zone_purok' => '1',
+            'email' => 'ana.ui.'.uniqid('', true).'@example.com',
+            'password' => Hash::make('ValidPass!123'),
+            'resident_id' => null,
+        ]);
+
+        return $this->withSession(['resident_account_id' => $account->account_id]);
+    }
+
     public function test_resident_request_form_describes_automatic_verification(): void
     {
-        $html = $this->get(route('chatbot.household.verification'))->assertOk()->getContent();
+        $html = $this->asResident()->get(route('chatbot.household.verification'))->assertOk()->getContent();
 
         $this->assertStringContainsString('Request Household Record', $html);
         $this->assertStringContainsString('automatically compare', $html);
         $this->assertStringContainsString('Matching is automatic', $html);
         $this->assertStringContainsString('not a manual Admin approval step', $html);
         $this->assertStringContainsString('Submit Request', $html);
-        $this->assertStringContainsString('chatbot/household/verification/status', $html);
+        $this->assertStringContainsString(route('chatbot.household.verification.store'), $html);
         $this->assertStringNotContainsString('reviewed before your identity', $html);
     }
 
     public function test_daily_limit_state_hides_submit_action(): void
     {
-        $html = $this->get(route('chatbot.household.verification', ['state' => 'daily-limit']))
+        $html = $this->asResident()
+            ->get(route('chatbot.household.verification', ['state' => 'daily-limit']))
             ->assertOk()
             ->getContent();
 
@@ -32,57 +54,69 @@ class HouseholdRequestVerificationUiTest extends TestCase
         $this->assertStringNotContainsString('>Submit Request</', $html);
     }
 
-    public function test_status_page_renders_automatic_verification_states(): void
+    public function test_status_page_uses_real_pending_request_not_query_string(): void
     {
-        $states = [
-            'verifying' => 'Verification in progress',
-            'approved' => 'Match found',
-            'rejected' => 'No match found',
-            'failed-1' => 'Failed attempt 1 of 3',
-            'failed-2' => 'Failed attempt 2 of 3',
-            'failed-3' => 'Failed attempt 3 of 3',
-            'daily-limit' => 'Daily request limit reached',
-        ];
+        $account = ResidentAccount::query()->create([
+            'first_name' => 'Ana',
+            'middle_name' => 'Cruz',
+            'last_name' => 'Santos',
+            'zone_purok' => '1',
+            'email' => 'ana.ui.status@example.com',
+            'password' => Hash::make('ValidPass!123'),
+            'resident_id' => null,
+        ]);
 
-        foreach ($states as $state => $label) {
-            $html = $this->get(route('chatbot.household.verification.status', ['state' => $state]))
-                ->assertOk()
-                ->getContent();
+        $this->withSession(['resident_account_id' => $account->account_id])
+            ->post(route('chatbot.household.verification.store'), [
+                'householdNo' => 'HH-151',
+                'relationship' => 'Household Head',
+                'firstName' => 'Ana',
+                'middleName' => 'Cruz',
+                'lastName' => 'Santos',
+                'mobileNumber' => '09171234567',
+                'emailAddress' => 'ana.ui.status@example.com',
+            ]);
 
-            $this->assertStringContainsString($label, $html);
-            $this->assertStringContainsString('automatic verification', strtolower($html));
-            $this->assertStringNotContainsString('>Skip</', $html);
-            $this->assertDoesNotMatchRegularExpression('/<button[^>]*>\s*Skip\s*<\/button>/i', $html);
-            $this->assertStringNotContainsString('Approve', $html);
-            $this->assertStringNotContainsString('Reject request', $html);
-        }
-
-        $verifying = $this->get(route('chatbot.household.verification.status', ['state' => 'verifying']))
+        $html = $this->get(route('chatbot.household.verification.status', ['state' => 'approved']))
             ->assertOk()
             ->getContent();
-        $this->assertStringContainsString('compared with barangay records', $verifying);
-        $this->assertStringContainsString('does not require Admin review', $verifying);
 
-        $approved = $this->get(route('chatbot.household.verification.status', ['state' => 'approved']))
-            ->assertOk()
-            ->getContent();
-        $this->assertStringContainsString('matched a household record', $approved);
-
-        $rejected = $this->get(route('chatbot.household.verification.status', ['state' => 'rejected']))
-            ->assertOk()
-            ->getContent();
-        $this->assertStringContainsString('could not find a matching household record', $rejected);
-
-        $blocked = $this->get(route('chatbot.household.verification.status', ['state' => 'daily-limit']))
-            ->assertOk()
-            ->getContent();
-        $this->assertStringNotContainsString('Try again', $blocked);
-        $this->assertStringContainsString('Submit Request is unavailable', $blocked);
-        $this->assertStringContainsString('maximum number of household record requests allowed today', $blocked);
+        $this->assertStringContainsString('Verification in progress', $html);
+        $this->assertStringContainsString('compared with barangay records', $html);
+        $this->assertStringContainsString('does not require Admin review', $html);
+        $this->assertStringContainsString('automatic verification', strtolower($html));
+        $this->assertStringNotContainsString('Match found', $html);
+        $this->assertStringNotContainsString('Continue to Household Information', $html);
+        $this->assertStringNotContainsString('>Skip</', $html);
+        $this->assertStringNotContainsString('Approve', $html);
+        $this->assertStringNotContainsString('Reject request', $html);
     }
 
     public function test_admin_household_requests_remain_monitoring_without_manual_approve(): void
     {
+        $account = ResidentAccount::query()->create([
+            'first_name' => 'Ana',
+            'middle_name' => 'Cruz',
+            'last_name' => 'Santos',
+            'zone_purok' => '1',
+            'email' => 'ana.ui.list@example.com',
+            'password' => Hash::make('ValidPass!123'),
+            'resident_id' => null,
+        ]);
+        $row = new RecordRequest;
+        $row->account_id = $account->account_id;
+        $row->household_no_submitted = 'HH-151';
+        $row->zone_submitted = '1';
+        $row->relationship_submitted = 'Household Head';
+        $row->first_name_submitted = 'Ana';
+        $row->middle_name_submitted = 'Cruz';
+        $row->last_name_submitted = 'Santos';
+        $row->mobile_number_submitted = '09171234567';
+        $row->email_submitted = $account->email;
+        $row->submitter_ip = '203.0.113.10';
+        $row->status = RecordRequest::STATUS_PENDING;
+        $row->save();
+
         $html = $this->withSession([UiRole::SESSION_KEY => 'admin'])
             ->get(route('household-requests.index'))
             ->assertOk()
@@ -100,8 +134,36 @@ class HouseholdRequestVerificationUiTest extends TestCase
 
     public function test_admin_household_request_details_use_automatic_verification_semantics(): void
     {
+        $account = ResidentAccount::query()->create([
+            'first_name' => 'Ana',
+            'middle_name' => 'Cruz',
+            'last_name' => 'Santos',
+            'zone_purok' => '1',
+            'email' => 'ana.ui.details@example.com',
+            'password' => Hash::make('ValidPass!123'),
+            'resident_id' => null,
+        ]);
+
+        $row = new RecordRequest;
+        $row->account_id = $account->account_id;
+        $row->household_no_submitted = 'HH-151';
+        $row->zone_submitted = '1';
+        $row->relationship_submitted = 'Household Head';
+        $row->first_name_submitted = 'Ana';
+        $row->middle_name_submitted = 'Cruz';
+        $row->last_name_submitted = 'Santos';
+        $row->mobile_number_submitted = '09171234567';
+        $row->email_submitted = $account->email;
+        $row->submitter_ip = '203.0.113.10';
+        $row->matched_resident_id = null;
+        $row->status = RecordRequest::STATUS_PENDING;
+        $row->decision_reason = null;
+        $row->evaluated_at = null;
+        $row->approved_at = null;
+        $row->save();
+
         $html = $this->withSession([UiRole::SESSION_KEY => 'admin'])
-            ->get(route('household-requests.view', ['id' => 'res-001']))
+            ->get(route('household-requests.view', ['id' => 'rr-'.$row->request_id]))
             ->assertOk()
             ->getContent();
 
@@ -122,21 +184,71 @@ class HouseholdRequestVerificationUiTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/<button[^>]*>\s*Reject\s*<\/button>/i', $html);
     }
 
-    public function test_jaica_demo_fixture_age_matches_child_birthday_context(): void
+    public function test_guest_cannot_open_household_information_without_chatbot_session(): void
     {
-        $html = $this->get(route('chatbot.household.information'))->assertOk()->getContent();
-
-        $this->assertStringContainsString('Jaica A. Doe', $html);
-        $this->assertStringContainsString('December 7, 2025', $html);
-        $this->assertMatchesRegularExpression('/Jaica A\. Doe[\s\S]{0,240}?8 months old/i', $html);
-        $this->assertDoesNotMatchRegularExpression('/Jaica A\. Doe[\s\S]{0,240}?38 years old/i', $html);
-        $this->assertStringContainsString('11.5 kg', $html);
-        $this->assertStringContainsString('87 cm', $html);
+        $this->get(route('chatbot.household.information'))
+            ->assertRedirect(route('chatbot.login'));
     }
 
     public function test_layouts_expose_skip_to_main_content_link(): void
     {
-        $chatbotHtml = $this->get(route('chatbot.household.information'))->assertOk()->getContent();
+        $household = \App\Models\Household::factory()->create(['household_no' => '151']);
+        $resident = \App\Models\Resident::factory()->create([
+            'household_id' => $household->getKey(),
+            'first_name' => 'Ana',
+            'middle_name' => 'Cruz',
+            'last_name' => 'Santos',
+            'relation' => 'Head',
+            'birthday' => now()->subYears(30)->toDateString(),
+            'sex' => 'Female',
+        ]);
+        $residentKey = $resident->getAttribute(\App\Models\Resident::resolvedPrimaryKeyName());
+
+        $account = ResidentAccount::query()->create([
+            'first_name' => 'Ana',
+            'middle_name' => 'Cruz',
+            'last_name' => 'Santos',
+            'zone_purok' => '1',
+            'email' => 'ana.skip.'.uniqid('', true).'@example.com',
+            'password' => Hash::make('ValidPass!123'),
+            'resident_id' => $residentKey,
+        ]);
+
+        $row = new RecordRequest;
+        $row->account_id = $account->account_id;
+        $row->household_no_submitted = '151';
+        $row->zone_submitted = '1';
+        $row->relationship_submitted = 'Household Head';
+        $row->first_name_submitted = 'Ana';
+        $row->middle_name_submitted = 'Cruz';
+        $row->last_name_submitted = 'Santos';
+        $row->mobile_number_submitted = '09171234567';
+        $row->email_submitted = $account->email;
+        $row->submitter_ip = '127.0.0.1';
+        $row->matched_resident_id = $residentKey;
+        $row->status = RecordRequest::STATUS_APPROVED;
+        $row->decision_reason = null;
+        $row->evaluated_at = now();
+        $row->approved_at = now();
+        $row->save();
+
+        $otp = new \App\Models\RecordRequestOtp;
+        $otp->request_id = $row->request_id;
+        $otp->code_hash = Hash::make('123456');
+        $otp->destination_fingerprint = app(\App\Services\HouseholdRecordRequestOtpIssuer::class)
+            ->fingerprintForDestination(\App\Services\HouseholdRecordRequestOtpIssuer::DEST_EMAIL, (string) $account->email);
+        $otp->expires_at = now()->addMinutes(5);
+        $otp->attempt_count = 1;
+        $otp->resend_count = 0;
+        $otp->last_sent_at = now();
+        $otp->verified_at = now();
+        $otp->invalidated_at = null;
+        $otp->save();
+
+        $chatbotHtml = $this->withSession(['resident_account_id' => $account->account_id])
+            ->get(route('chatbot.household.information'))
+            ->assertOk()
+            ->getContent();
         $adminHtml = $this->withSession([UiRole::SESSION_KEY => 'admin'])
             ->get(route('household-requests.index'))
             ->assertOk()

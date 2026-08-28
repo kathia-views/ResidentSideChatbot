@@ -211,7 +211,7 @@
 
 .lml-chatbot-main__household-btn:not(.lml-chatbot-main__household-btn--pending):not(
         .lml-chatbot-main__household-btn--verified
-    ) {
+    ):not(.lml-chatbot-main__household-btn--approved) {
     justify-content: center;
     text-align: center;
 }
@@ -236,6 +236,73 @@
 
 .lml-chatbot-main__household-btn:active {
     background-color: var(--lml-deep-green);
+}
+
+.lml-chatbot-main__household-btn--pending,
+.lml-chatbot-main__household-btn--pending:hover,
+.lml-chatbot-main__household-btn--pending:active {
+    cursor: default;
+    pointer-events: none;
+    background-color: var(--lml-secondary);
+    color: #fff;
+}
+
+.lml-chatbot-main__household-btn--denied,
+.lml-chatbot-main__household-btn--denied:hover,
+.lml-chatbot-main__household-btn--denied:active {
+    cursor: default;
+    pointer-events: none;
+    background-color: #c62828;
+    color: #fff;
+}
+
+.lml-chatbot-main__household-btn--approved,
+.lml-chatbot-main__household-btn--approved:hover,
+.lml-chatbot-main__household-btn--approved:active {
+    background-color: var(--lml-secondary);
+    color: #fff;
+}
+
+.lml-chatbot-main__household-btn--approved > i {
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.lml-chatbot-main__household-result {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: 100%;
+    margin-bottom: 0.55rem;
+}
+
+.lml-chatbot-main__household-result .lml-chatbot-main__household-btn {
+    margin-bottom: 0;
+}
+
+.lml-chatbot-main__household-reason {
+    margin: 0;
+    padding: 0 0.15rem;
+    color: var(--lml-text, #1f2933);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.35;
+}
+
+.lml-chatbot-main__household-retry {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.1rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: var(--lml-chat-radius-md);
+    background-color: transparent;
+    color: var(--lml-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
 }
 
 .lml-chatbot-main__household-btn.is-active,
@@ -1069,11 +1136,16 @@
     width: 100%;
     min-height: 2.5rem;
     padding: 0.55rem 0.75rem;
+    border: 0;
     border-radius: var(--lml-chat-radius-sm);
+    background: transparent;
     color: var(--lml-dark-green);
+    font: inherit;
     font-size: 0.9rem;
     font-weight: 600;
+    text-align: left;
     text-decoration: none;
+    cursor: pointer;
     transition: background-color var(--lml-chat-ease), color var(--lml-chat-ease);
 }
 

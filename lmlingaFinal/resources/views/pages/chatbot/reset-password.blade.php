@@ -31,23 +31,22 @@
                         </p>
                     </header>
 
-                    {{--
-                        UI-phase form: method stays POST with CSRF for secure markup.
-                        Submission is prevented until resident password-reset backend is wired.
-                        Hidden token/email fields are ready for a future reset link handler.
-                        Do not use method="get" (would expose credentials in the URL).
-                    --}}
                     <form
                         class="lml-chatbot-reset-password__form"
-                        action="{{ route('chatbot.password.reset') }}"
+                        action="{{ route('chatbot.password.update') }}"
                         method="post"
                         novalidate
-                        onsubmit="return false;"
                     >
                         @csrf
 
-                        <input type="hidden" name="token" value="{{ request('token') }}">
-                        <input type="hidden" name="email" value="{{ old('email', request('email')) }}">
+                        @if ($errors->has('email') || $errors->has('token'))
+                            <p class="lml-form-error" role="alert">
+                                {{ $errors->first('email') ?: $errors->first('token') }}
+                            </p>
+                        @endif
+
+                        <input type="hidden" name="token" value="{{ $token ?? request()->route('token') ?? request('token') }}">
+                        <input type="hidden" name="email" value="{{ old('email', $email ?? request('email')) }}">
 
                         <x-lml.form-group
                             label="New Password"

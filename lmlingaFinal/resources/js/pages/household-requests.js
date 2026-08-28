@@ -1,6 +1,7 @@
 /**
- * Household Requests — Admin list filters (UI only).
- * Demo-only client filtering. View navigates to the details page.
+ * Household Requests — Admin list filters (read-only).
+ * Client filtering over rendered record_requests snapshot rows.
+ * View navigates to the details page.
  */
 
 function applyHouseholdRequestFilters(root) {
@@ -24,6 +25,9 @@ function applyHouseholdRequestFilters(root) {
         const firstName = (row.dataset.hrFirst || '').toLowerCase();
         const middleName = (row.dataset.hrMiddle || '').toLowerCase();
         const lastName = (row.dataset.hrLast || '').toLowerCase();
+        const householdNo = (row.dataset.hrHousehold || '').toLowerCase();
+        const mobile = (row.dataset.hrMobile || '').toLowerCase();
+        const email = (row.dataset.hrEmail || '').toLowerCase();
         const rowZone = row.dataset.hrZone || '';
         const rowStatus = row.dataset.hrStatus || '';
 
@@ -31,7 +35,10 @@ function applyHouseholdRequestFilters(root) {
             || fullName.includes(query)
             || firstName.includes(query)
             || middleName.includes(query)
-            || lastName.includes(query);
+            || lastName.includes(query)
+            || householdNo.includes(query)
+            || mobile.includes(query)
+            || email.includes(query);
         const matchesZone = normalizedZone === 'all' || rowZone === normalizedZone;
         const matchesStatus = normalizedStatus === 'all' || rowStatus === normalizedStatus;
         const show = matchesSearch && matchesZone && matchesStatus;
